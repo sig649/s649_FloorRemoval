@@ -19,29 +19,24 @@ namespace s649VT
 
     public class Main : BaseUnityPlugin
     {
-       // private static ConfigEntry<bool> flagEnableLogging;
+        private static ConfigEntry<bool> flagModInfiniteDigOnField;
+        private static ConfigEntry<bool> flagModInfiniteDigOnFieldToNothing;
 
-        //public static bool propFlagEnablelLogging
-        //{
-            //get => flagEnableLogging.Value;
-            //set => flagEnableLogging = value;
-        //}
+
+        public static bool configFlagModInfiniteDigOnField => flagModInfiniteDigOnField.Value;
+        public static bool configFlagModInfiniteDigOnFieldToNothing => flagModInfiniteDigOnFieldToNothing.Value;
+        
 
         private void Start()
         {
-            //flagEnableLogging = Config.Bind("#0General", "ENABLE_LOGGING", true, "Enable Logging");
+            flagModInfiniteDigOnField = Config.Bind("#FUNC_01a", "MOD_INFINITE_DIG", true, "Mod digging infinite dirt chunk on field");
+            flagModInfiniteDigOnFieldToNothing = Config.Bind("#FUNC_01b", "CHANGE_TO_DIGGING_NOTHING_ON_FIELD", false, "Digging nothing on field");
 
             //UnityEngine.Debug.Log("[LS]Start [configLog:" + propFlagEnablelLogging.ToString() + "]");
             var harmony = new Harmony("Main");
             new Harmony("Main").PatchAll();
         }
-        //public static void Lg(string t)
-        //{
-        //    UnityEngine.Debug.Log(t);
-        //}
-        //public static bool IsOnGlobalMap(){
-        //    return (EClass.pc.currentZone.id == "ntyris") ? true : false;
-        //}
+        
     }
     //++++EXE++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     [HarmonyPatch]
@@ -49,6 +44,8 @@ namespace s649VT
         [HarmonyPrefix]
         [HarmonyPatch(typeof(Map), "MineFloor")]
         public static bool Prefix(Map __instance, Point point, Chara c, bool recoverBlock, bool removePlatform){
+            if(!Main.configFlagModInfiniteDigOnField){return true;} //#FUNC_01a Flag:falseなら何もしない
+            //----debug------------------------------------------------------------------------
             string text = "[LS]MF [";
             text += "Map:" + __instance.ToString() + "][";
             text += "P:" + point.ToString() + "][";
@@ -56,36 +53,30 @@ namespace s649VT
             text += "rB:" + recoverBlock.ToString() + "][";
             text += "rP:" + removePlatform.ToString() + "][";
             text += "]";
-            if(point.sourceFloor.id == 4){
+            //---debug kokomade--------------------------------------------------------------------
+            if(Main.configFlagModInfiniteDigOnFieldToNothing){return false;} //#FUNC_01b　Flag:trueなら掘りつつアイテム入手をスキップ
+            if(point.sourceFloor.id == 4 ){
                 //Debug.Log("Floor is hatake");
+                int num = UnityEngine.Random.Range(0, 99);
+                Thing t = null;
+                switch(num){
+                    case < 25 and >= 10 : t = ThingGen.Create("stone");
+                        break;
+                    case < 10 and >= 2 : t = ThingGen.Create("pebble");
+                        break;
+                    case < 2 : t = ThingGen.Create("rock");
+                        break;
+                }
+                if(t != null){
+                    //c.Pick(t);
+                    __instance.TrySmoothPick(point, t, c);
+                }
                 return false;
             }
             return true;
             //Debug.Log(text);
         }
-        /*
-        [HarmonyPostfix]
-        [HarmonyPatch(typeof(Map), "DropBlockComponent")]
-        public static void Postfix(Point point,TileRow r,SourceMaterial.Row mat, bool recoverBlock, bool isPlatform, Chara c){
-            string text = "[LS]DBC [";
-            //text += "Map:" + __instance.ToString() + "][";
-            text += "P:" + point.ToString() + "][";
-            text += "r:" + r.ToString() + "][";
-            text += "rid:" + r.id.ToString() + "][";
-            text += "mat:" + mat.ToString() + "][";
-            text += "rB:" + recoverBlock.ToString() + "][";
-            text += "iP:" + isPlatform.ToString() + "][";
-            //text += "c:" + c.ToString() + "][";
-            text += "]";
-            Debug.Log(text);
-        }
-        */
-        /*
-        [HarmonyPostfix]
-        [HarmonyPatch(typeof(ThingGen), "CreateRawMaterial")]
-        public static void Postfix(SourceMaterial.Row row){
-            Debug.Log("[LS]TG->CRM : " + row.ToString());
-        }*/
+        
     }
 }
 //------------template--------------------------------------------------------------------------------------------
@@ -298,4 +289,38 @@ class ZonePatch {
                 return true;
             }
         }
+
+
+        //public static void Lg(string t)
+        //{
+        //    UnityEngine.Debug.Log(t);
+        //}
+        //public static bool IsOnGlobalMap(){
+        //    return (EClass.pc.currentZone.id == "ntyris") ? true : false;
+        //}
+
         */
+
+        /*
+        [HarmonyPostfix]
+        [HarmonyPatch(typeof(Map), "DropBlockComponent")]
+        public static void Postfix(Point point,TileRow r,SourceMaterial.Row mat, bool recoverBlock, bool isPlatform, Chara c){
+            string text = "[LS]DBC [";
+            //text += "Map:" + __instance.ToString() + "][";
+            text += "P:" + point.ToString() + "][";
+            text += "r:" + r.ToString() + "][";
+            text += "rid:" + r.id.ToString() + "][";
+            text += "mat:" + mat.ToString() + "][";
+            text += "rB:" + recoverBlock.ToString() + "][";
+            text += "iP:" + isPlatform.ToString() + "][";
+            //text += "c:" + c.ToString() + "][";
+            text += "]";
+            Debug.Log(text);
+        }
+        */
+        /*
+        [HarmonyPostfix]
+        [HarmonyPatch(typeof(ThingGen), "CreateRawMaterial")]
+        public static void Postfix(SourceMaterial.Row row){
+            Debug.Log("[LS]TG->CRM : " + row.ToString());
+        }*/
