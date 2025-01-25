@@ -15,23 +15,25 @@ using Debug = UnityEngine.Debug;
 
 namespace s649VT
 {
-    [BepInPlugin("s649_VanillaTweaks", "s649 Vanilla Tweaks", "0.0.0.0")]
+    [BepInPlugin("s649_VanillaTweaks", "s649 Vanilla Tweaks", "0.0.1.0")]
 
     public class Main : BaseUnityPlugin
     {
         private static ConfigEntry<bool> flagModInfiniteDigOnField;
         private static ConfigEntry<bool> flagModInfiniteDigOnFieldToNothing;
+        private static ConfigEntry<bool> flagModDiggingChunk;
 
 
         public static bool configFlagModInfiniteDigOnField => flagModInfiniteDigOnField.Value;
         public static bool configFlagModInfiniteDigOnFieldToNothing => flagModInfiniteDigOnFieldToNothing.Value;
+        public static bool configFlagModDiggingChunk => flagModDiggingChunk.Value;
         
 
         private void Start()
         {
-            flagModInfiniteDigOnField = Config.Bind("#FUNC_01a", "MOD_INFINITE_DIG", true, "Mod digging infinite dirt chunk on field");
-            flagModInfiniteDigOnFieldToNothing = Config.Bind("#FUNC_01b", "CHANGE_TO_DIGGING_NOTHING_ON_FIELD", false, "Digging nothing on field");
-
+            flagModInfiniteDigOnField = Config.Bind("#FUNC_01_00_a", "MOD_INFINITE_DIG", true, "Mod digging infinite dirt chunk on field");
+            flagModInfiniteDigOnFieldToNothing = Config.Bind("#FUNC_01_00_b", "CHANGE_TO_DIGGING_NOTHING_ON_FIELD", false, "Digging nothing on field");
+            flagModDiggingChunk = Config.Bind("#FUNC_01_01", "MOD_DIGGING_CHUNK", true, "Mod digging chunks (This function takes precedence over #FUNC_01_00)");
             //UnityEngine.Debug.Log("[LS]Start [configLog:" + propFlagEnablelLogging.ToString() + "]");
             var harmony = new Harmony("Main");
             new Harmony("Main").PatchAll();
@@ -45,6 +47,8 @@ namespace s649VT
         [HarmonyPatch(typeof(Map), "MineFloor")]
         public static bool Prefix(Map __instance, Point point, Chara c, bool recoverBlock, bool removePlatform){
             if(!Main.configFlagModInfiniteDigOnField){return true;} //#FUNC_01a Flag:falseなら何もしない
+            if(Main.configFlagModDiggingChunk){return true;} //#FUNC_01Another Flag:trueなら何もしない
+            
             //----debug------------------------------------------------------------------------
             string text = "[LS]MF [";
             text += "Map:" + __instance.ToString() + "][";
@@ -76,8 +80,57 @@ namespace s649VT
             return true;
             //Debug.Log(text);
         }
-        
+
+        [HarmonyPostfix]
+        [HarmonyPatch(typeof(Map), "MineFloor")]
+        public static void Postfix(Map __instance, Point point, Chara c){
+            if(Main.configFlagModDiggingChunk && ContainsChunk(point)){
+                point.SetFloor(45, 40);
+            }   
+        }
+        private static bool ContainsChunk(Point point){
+            if(point.sourceFloor.components[0].Contains("chunk@soil") || point.sourceFloor.components[0].Contains("chunk@snow") || point.sourceFloor.components[0].Contains("chunk@ice")){
+                return true;
+            } else {
+                return false;
+            }
+
+        }
+
     }
+    //+++++++ TaskDig +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    /*
+    [HarmonyPatch(typeof(TaskDig))]
+    public class PreExe{
+        [HarmonyPrefix]
+        [HarmonyPatch(typeof(TaskDig), "GetHitResult")]
+        public static bool Prefix(TaskDig __instance, HitResult __result){
+            if(!Main.configFlagModDiggingChunk){return true;} //#FUNC_01Another Flag:falseなら何もしない
+            
+            //ここからバニラの除外処理
+            if(EClass._zone.IsRegion && __instance.GetTreasureMap() != null) {
+                return true;
+            }
+            if(__instance.mode == TaskDig.Mode.RemoveFloor){
+                return true;
+            }
+            Point pos = __instance.pos;
+            if (EClass._zone.IsSkyLevel && (pos.Installed != null || pos.Charas.Count >= 2 || (pos.HasChara && pos.FirstChara != EClass.pc))){
+                return true;
+            }
+            if (!pos.IsInBounds || pos.IsWater || pos.HasObj || (!EClass._zone.IsPCFaction && pos.HasBlock)){
+                return true;
+            }
+            //ここまでバニラの除外処理
+            if (!pos.HasBridge && pos.sourceFloor.id == 40){
+                __result = HitResult.Valid;
+                return false;
+            }
+            return true;
+        }
+    }
+    */
+
 }
 //------------template--------------------------------------------------------------------------------------------
 /*
