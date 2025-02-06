@@ -13,9 +13,9 @@ using System.IO;
 //using System.Diagnostics;
 using Debug = UnityEngine.Debug;
 
-namespace s649VT
+namespace s649FR
 {
-    [BepInPlugin("s649_VanillaTweaks", "s649 Vanilla Tweaks", "0.0.2.0")]
+    [BepInPlugin("s649_FloorRemoval", "s649 Floor Removal", "0.1.0.0")]
 
     public class Main : BaseUnityPlugin
     {
@@ -44,20 +44,31 @@ namespace s649VT
         */
         private void LoadConfig()
         {
+            CE_DrawingWaterByEmptyBottle = Config.Bind("#FUNC_02_00", "DRAWING_WATER_BY_EMPTY_BOTTLE", true, "If true, you can drawing water from floor of water by empty bottle");
+
+            CE_FlagReplaceWaterFloor = Config.Bind("#FUNC_02_01", "REPLACE_WATER_FLOOR", true, "If true, drawing water changes water floor");
+
             flagModInfiniteDigOnField = Config.Bind("#FUNC_01_00_a", "MOD_INFINITE_DIG", true, "You will be able to get stones from the field");
             flagModInfiniteDigOnFieldToNothing = Config.Bind("#FUNC_01_00_b", "CHANGE_TO_DIGGING_NOTHING_ON_FIELD", false, "Nothing will be dug out of the field");
             flagModDiggingChunk = Config.Bind("#FUNC_01_01", "MOD_DIGGING_CHUNK", true, "Replace some floors with dirt floors after digging");
         }
         //////////////////////////////////////////////////////////////////////
         
-        private static ConfigEntry<bool> flagModInfiniteDigOnField;
-        private static ConfigEntry<bool> flagModInfiniteDigOnFieldToNothing;
-        private static ConfigEntry<bool> flagModDiggingChunk;
+        private static ConfigEntry<bool> flagModInfiniteDigOnField;//#F_01_00_a
+        private static ConfigEntry<bool> flagModInfiniteDigOnFieldToNothing;//#F01_00_b
+        private static ConfigEntry<bool> flagModDiggingChunk;//#F01_01
+        private static ConfigEntry<bool> CE_DrawingWaterByEmptyBottle;//#F02_00
+        
+        private static ConfigEntry<bool> CE_FlagReplaceWaterFloor;//#F02_01
 
+        
 
         public static bool configFlagModInfiniteDigOnField => flagModInfiniteDigOnField.Value;
         public static bool configFlagModInfiniteDigOnFieldToNothing => flagModInfiniteDigOnFieldToNothing.Value;
         public static bool configFlagModDiggingChunk => flagModDiggingChunk.Value;
+        public static bool configDrawingWaterByEmptyBottle => CE_DrawingWaterByEmptyBottle.Value;
+        public static bool configReplaceWaterFloor => CE_FlagReplaceWaterFloor.Value;
+        
         
         
         public static bool CanDigStoneOnField(Point point){
@@ -137,9 +148,98 @@ namespace s649VT
             } else {
                 return false;
             }
+        }
+    }
 
+    [HarmonyPatch]
+    public class TraitPotionEmptyPatch{
+        internal static Point pos = null;
+
+        [HarmonyPrefix]
+        [HarmonyPatch(typeof(TraitPotionEmpty), "CanUse")]
+        internal static bool Prefix(Chara c, Point p, ref bool __result){
+            if(!Main.configDrawingWaterByEmptyBottle){return true;}
+            if(p.cell.IsTopWater){
+                __result = p.cell.IsTopWaterAndNoSnow;
+                return false;
+            }
+            return true;
         }
 
+        [HarmonyPrefix]
+        [HarmonyPatch(typeof(TraitPotionEmpty), "OnUse")]
+        internal static bool Prefix(Chara c, Point p,TraitPotionEmpty __instance, ref bool __result){
+            TraitWell well = __instance.GetWell(p);
+            if(well == null){
+                SE.Play("water_farm");
+                pos = p;
+                //int idCell = pos.cell;
+                //Debug.Log("[OK]source:" + pos.cell.ToString());
+                switch ((pos.HasBridge ? pos.sourceBridge : pos.sourceFloor).alias)
+                {
+                    case "floor_water_shallow":
+                        ChangeFloor("floor_water_shallow2");
+                        break;
+                    case "floor_water":
+                        ChangeFloor("floor_water_shallow");
+                        break;
+                    case "floor_water_deep":
+                        ChangeFloor("floor_water");
+                        break;
+                    default:
+                        ChangeFloor("floor_raw3");
+                        break;
+                }
+                
+                if (EClass.rnd(3) == 0)
+                {
+                    c.stamina.Mod(-1);
+                }
+                
+                //Debug.Log("czbioid = " + EClass.pc.currentZone.biome.id.ToString());
+                __instance.owner.ModNum(-1);
+                string biome = EClass.pc.currentZone.biome.id.ToString();
+                Thing t;
+                if(biome == "Sand" || biome == "Water"){//sea
+                    t = ThingGen.Create("1142");//siomizu
+                } else {
+                    t = ThingGen.Create("water_dirty");
+                }
+                
+                c.Pick(t);
+                __result = true;
+                return false;
+
+            }
+            return true;
+        }
+
+        internal static void ChangeFloor(string id)
+        {
+            if(!Main.configReplaceWaterFloor){
+                return ;
+            }
+            SourceFloor.Row row = EClass.sources.floors.alias[id];
+            if (pos.HasBridge)
+            {
+                pos.cell._bridge = (byte)row.id;
+                if (id == "floor_raw3")
+                {
+                    pos.cell._bridgeMat = 45;
+                }
+            }
+            else
+            {
+                pos.cell._floor = (byte)row.id;
+                if (id == "floor_raw3")
+                {
+                    pos.cell._floorMat = 45;
+                }
+            }
+            EClass._map.SetLiquid(pos.x, pos.z);
+            pos.RefreshNeighborTiles();
+        }
+        
     }
     /*
     [HarmonyPatch(typeof(Zone))]
