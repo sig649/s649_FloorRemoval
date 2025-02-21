@@ -15,7 +15,7 @@ using Debug = UnityEngine.Debug;
 
 namespace s649FR
 {
-    [BepInPlugin("s649_FloorRemoval", "s649 Floor Removal", "0.1.0.0")]
+    [BepInPlugin("s649_FloorRemoval", "s649 Floor Removal", "0.2.0.1")]
 
     public class Main : BaseUnityPlugin
     {
@@ -48,9 +48,9 @@ namespace s649FR
 
             CE_FlagReplaceWaterFloor = Config.Bind("#FUNC_02_01", "REPLACE_WATER_FLOOR", true, "If true, drawing water changes water floor");
 
-            flagModInfiniteDigOnField = Config.Bind("#FUNC_01_00_a", "MOD_INFINITE_DIG", true, "You will be able to get stones from the field");
-            flagModInfiniteDigOnFieldToNothing = Config.Bind("#FUNC_01_00_b", "CHANGE_TO_DIGGING_NOTHING_ON_FIELD", false, "Nothing will be dug out of the field");
-            flagModDiggingChunk = Config.Bind("#FUNC_01_01", "MOD_DIGGING_CHUNK", true, "Replace some floors with dirt floors after digging");
+            flagModInfiniteDigOnField = Config.Bind("#FUNC_01_00_a", "MOD_DIG_ON_FIELD", true, "Change the deliverables when you perform a dig in the field");
+            flagModInfiniteDigOnFieldToNothing = Config.Bind("#FUNC_01_00_b", "CHANGE_TO_DIGGING_NOTHING_ON_FIELD", false, "Nothing will be dug out of the field(Not Recommend)");
+            flagModDiggingChunk = Config.Bind("#FUNC_01_01", "REPLACE_FLOOR_AFTER_DIGGING_CHUNK", true, "Replace some floors with dirt floors after digging");
         }
         //////////////////////////////////////////////////////////////////////
         
@@ -111,16 +111,105 @@ namespace s649FR
             //---debug kokomade--------------------------------------------------------------------
             if(Main.configFlagModInfiniteDigOnFieldToNothing){return false;} //#FUNC_01b　Flag:trueなら掘りつつアイテム入手をスキップ
             if(point.sourceFloor.id == 4){
-                //Debug.Log("Floor is hatake");
-                int num = UnityEngine.Random.Range(0, 99);
+                //Debug.Log("[FR]PointMat" + point.matFloor.id.ToString());
+                int matF = point.matFloor.id;
+                int num = UnityEngine.Random.Range(0, 49999);
+                int seed;
                 Thing t = null;
-                switch(num){
-                    case < 25 and >= 10 : t = ThingGen.Create("stone");
+                switch(num){//v0.2.0.0
+                    //lucky numbers
+                    case 0 : t = ThingGen.Create("medal");
+                    break;
+                    case 7 or 77: t = ThingGen.Create("ticket_fortune");
+                    break;
+                    case 17 or 27 or 37 or 47 or 57 or 67 or 87 or 97: t = ThingGen.Create("scratchcard");
+                    break;
+                    case 777 : 
+                        seed = EClass.pc.LV * 100;
+                        if(seed < 100){seed = 100;};
+                        t = ThingGen.CreateCurrency(UnityEngine.Random.Range(seed/10, seed*10));
+                    break;
+                    case 7777 : 
+                        seed = EClass.pc.LV * 1000;
+                        if(seed < 1000){seed = 1000;};
+                        t = ThingGen.CreateCurrency(UnityEngine.Random.Range(seed, seed*100));
+                    break;
+
+                    //rare number
+                    case  < 10 and >= 1 : t = ThingGen.Create("money2");//gold bar
+                    break;
+                    case < 20 and >= 10 : t = ThingGen.Create("plat");//platina
+                    break;
+                    //case < 20 : t = ThingGen.Create("gacha_coin_plat");//platina
+                    //break;
+                    case < 25 and >= 21 : t = ThingGen.Create("gacha_coin_gold");
+                    break;
+                    case < 30 and >= 25 : t = ThingGen.Create("gacha_coin_silver");
+                    break;
+                    case < 50 and >= 30 : t = ThingGen.Create("gacha_coin");
+                    break;
+                    case < 90 and >= 60 : t = ThingGen.Create("casino_coin").SetNum(EClass.rnd(9) + 1);
+                    break;
+
+                    //uncommon
+                    case < 200 and >= 100 : t = ThingGen.Create("seed");
                         break;
-                    case < 10 and >= 2 : t = ThingGen.Create("pebble");
+                    case < 300 and >= 200 : t = ThingGen.Create("needle");
                         break;
-                    case < 2 : t = ThingGen.Create("rock");
+                    case < 400 and >= 300 : t = ThingGen.Create("scrap", 78);//plastic
                         break;
+                    case < 475 and >= 400 : t = ThingGen.Create("bone");
+                        break;
+                    case < 500 and >= 475 : t = ThingGen.Create("725");//animal bone
+                        break;
+                    case < 550 and >= 500 : t = ThingGen.Create("fang");
+                        break;
+                    case < 600 and >= 550 : t = ThingGen.Create("skin");
+                        break;
+                    case < 650 and >= 600 : t = ThingGen.Create("vine");
+                        break;
+                    case < 700 and >= 650 : t = ThingGen.Create("branch");
+                        break;
+                    case < 750 and >= 700 : t = ThingGen.Create("158");//stone rubble
+                        break;
+                    case < 800 and >= 750 : t = ThingGen.Create("181");//stone rubble
+                        break;
+                    case < 825 and >= 800 : t = ThingGen.Create("184");//rubble
+                        break;
+                    case < 850 and >= 825 : t = ThingGen.Create("185");//rubble
+                        break;
+                    case < 875 and >= 850 : t = ThingGen.Create("186");//rubble
+                        break;
+                    case < 900 and >= 875 : t = ThingGen.Create("187");//rubble
+                        break;
+                    case < 925 and >= 900 : t = ThingGen.Create("scrubber");//darekagasuteta
+                        break;
+                    case < 950 and >= 925 : t = ThingGen.Create("tissue");//darekagasuteta
+                        break;
+                    case < 960 and >= 950 : t = ThingGen.Create("529");//can
+                        break; 
+                    case < 970 and >= 960 : t = ThingGen.Create("1170");//can
+                        break; 
+                    case < 980 and >= 970 : t = ThingGen.Create("236");//can
+                        break;
+                    case < 985 and >= 980 : t = ThingGen.Create("726");//bottle
+                        break;
+                    case < 990 and >= 985 : t = ThingGen.Create("727");//bottle
+                        break;
+                    case < 995 and >= 990 : t = ThingGen.Create("728");//bottle
+                        break;
+                    //commmon
+                    case < 1500 and >= 1000: t = ThingGen.Create("ore",78);//plastic
+                        break;
+                    case < 3000 and >= 1500: t = ThingGen.Create("rock");
+                        break;
+                    case < 10000 and >= 3000 : t = ThingGen.Create("pebble").SetNum(EClass.rnd(1) + 1);
+                        break;
+                    case < 20000 and >= 10000 : t = ThingGen.Create("stone").SetNum(EClass.rnd(4) + 1);
+                        break;
+                    default  : t = ThingGen.Create("chunk",matF);//respectfloormaterial
+                        break;
+                    
                 }
                 if(t != null){
                     //c.Pick(t);
@@ -129,7 +218,6 @@ namespace s649FR
                 return false;
             }
             return true;
-            //Debug.Log(text);
         }
 
         [HarmonyPostfix]
@@ -205,7 +293,7 @@ namespace s649FR
                 } else {
                     t = ThingGen.Create("water_dirty");
                 }
-                
+                t.blessedState = BlessedState.Normal;//v0.2.0.0
                 c.Pick(t);
                 __result = true;
                 return false;
@@ -241,6 +329,33 @@ namespace s649FR
         }
         
     }
+    /*
+    [HarmonyPatch]
+    public class TaskPlowModding{   //v0.1.1.0
+        [HarmonyPrefix]
+        [HarmonyPatch(typeof(TaskPlow), "GetHitResult")]
+        public static bool Prefix(HitResult __result, TaskPlow __instance){
+            Point pos = __instance.pos;
+            if(pos.cell.IsTopWater || pos.HasObj){return true;}
+            if(pos.IsFarmField){
+                __result = HitResult.Valid;
+                return false;
+            }
+            return true;
+        }
+
+        [HarmonyPrefix]
+        [HarmonyPatch(typeof(TaskPlow), "CanPerform")]
+        public static bool Prefix(bool __result, TaskPlow __instance){
+            Point pos = __instance.pos;
+            if(pos.IsFarmField){
+                __result = true;
+                return false;
+            }
+            return true;
+        }
+    }
+    */
     /*
     [HarmonyPatch(typeof(Zone))]
     [HarmonyPatch(nameof(Zone.Activate))]
