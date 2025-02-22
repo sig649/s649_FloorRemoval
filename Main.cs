@@ -15,22 +15,26 @@ using Debug = UnityEngine.Debug;
 
 namespace s649FR
 {
-    [BepInPlugin("s649_FloorRemoval", "s649 Floor Removal", "0.3.0.0")]  
+    [BepInPlugin("s649_FloorRemoval", "s649 Floor Removal", "0.3.1.1")]  
     public class Main : BaseUnityPlugin
     {
         private static ConfigEntry<bool> CE_F01_00_a_ModDigOnField;//#F_01_00_a
         //private static ConfigEntry<bool> flagModInfiniteDigOnFieldToNothing;//#F01_00_b
-        private static ConfigEntry<bool> CE_F01_01_ReplaceHatake;//#F01_01
+        private static ConfigEntry<bool> CE_F01_01_Replace2DirtFloor;//#F01_01
         private static ConfigEntry<bool> CE_F02_00_DrawingWaterByEmptyBottle;//#F02_00  
         private static ConfigEntry<bool> CE_F02_01_ReplaceWaterFloor;//#F02_01
+        private static ConfigEntry<bool> CE_F02_01_a_ToggleReplaceWaterFloorFunction;//#F02_01_a //v0.3.1.0
+
         private static ConfigEntry<KeyCode> CE_KeyCode;//v0.3.0.0
         private static ConfigEntry<bool> CE_DebugLogging;//#F02_01
         
         public static bool config_F01_00_a_ModDigOnField => CE_F01_00_a_ModDigOnField.Value;//#F01_00_a
         //public static bool configFlagModInfiniteDigOnFieldToNothing => flagModInfiniteDigOnFieldToNothing.Value;//#F01_00_b
-        public static bool config_F01_01_ReplaceHatake => CE_F01_01_ReplaceHatake.Value;//#F01_01
+        public static bool config_F01_01_Replace2DirtFloor => CE_F01_01_Replace2DirtFloor.Value;//#F01_01
         public static bool config_F02_00_DrawingWaterByEmptyBottle => CE_F02_00_DrawingWaterByEmptyBottle.Value;//#F02_00
         public static bool config_F02_01_ReplaceWaterFloor => CE_F02_01_ReplaceWaterFloor.Value;//#F2_01
+        public static bool config_F02_01_a_ToggleReplaceWaterFloorFunction => CE_F02_01_a_ToggleReplaceWaterFloorFunction.Value;//#F2_01_a //v0.3.1.0
+
         public static bool IsFunctionKeyDown = false;//v0.3.0.0
         public static bool configDebugLogging => CE_DebugLogging.Value;
         
@@ -38,11 +42,12 @@ namespace s649FR
         {
             CE_F02_00_DrawingWaterByEmptyBottle = Config.Bind("#FUNC_02_00", "DRAWING_WATER_BY_EMPTY_BOTTLE", true, "If true, you can drawing water from floor of water by empty bottle");
 
-            CE_F02_01_ReplaceWaterFloor = Config.Bind("#FUNC_02_01", "REPLACE_WATER_FLOOR", true, "If true, drawing water changes water floor");
+            CE_F02_01_ReplaceWaterFloor = Config.Bind("#FUNC_02_01", "REPLACE_WATER_FLOOR", true, "If Press left shift ley, drawing water changes water floor");
+            CE_F02_01_a_ToggleReplaceWaterFloorFunction = Config.Bind("#FUNC_02_01_a", "Toggle_REPLACE_WATER_FLOOR", false, "If true, toggle replacing function by function key");//v0.3.1.0
 
             CE_F01_00_a_ModDigOnField = Config.Bind("#FUNC_01_00_a", "MOD_DIG_ON_FIELD", true, "Change the deliverables when you perform a dig in the field");
             //flagModInfiniteDigOnFieldToNothing = Config.Bind("#FUNC_01_00_b", "CHANGE_TO_DIGGING_NOTHING_ON_FIELD", false, "Nothing will be dug out of the field(Not Recommend)");
-            CE_F01_01_ReplaceHatake = Config.Bind("#FUNC_01_01", "REPLACE_FLOOR_AFTER_DIGGING_CHUNK", true, "Replace some floors with dirt floors after digging");
+            CE_F01_01_Replace2DirtFloor = Config.Bind("#FUNC_01_01", "REPLACE_FLOOR_AFTER_DIGGING_CHUNK", true, "Replace some floors with dirt floors after digging");
             CE_KeyCode = Config.Bind<KeyCode>("#KeyBind", "Function_Key", KeyCode.LeftShift, "Function_key");//v0.3.0.0
             CE_DebugLogging = Config.Bind("#z_Debug", "DEBUG_LOGGING", false, "For Debug");
         }
@@ -65,7 +70,7 @@ namespace s649FR
             if(configDebugLogging){
                 string text = "[FR]Config";
                 text += ("[01_00_a/" + TorF(config_F01_00_a_ModDigOnField) + "]");
-                text += ("[01_01/" + TorF(config_F01_01_ReplaceHatake) + "]");
+                text += ("[01_01/" + TorF(config_F01_01_Replace2DirtFloor) + "]");
                 text += ("[02_00/" + TorF(config_F02_00_DrawingWaterByEmptyBottle) + "]");
                 text += ("[02_01/" + TorF(config_F02_01_ReplaceWaterFloor) + "]");
                 Debug.Log(text);
@@ -100,7 +105,7 @@ namespace s649FR
         [HarmonyPatch(typeof(Map), "MineFloor")]
         public static bool Prefix(Map __instance, Point point, Chara c, bool recoverBlock, bool removePlatform){
             if(!Main.config_F01_00_a_ModDigOnField || Main.IsFunctionKeyDown){return true;} //#FUNC_01a Flag:falseならvanilla //
-            //if(Main.config_F01_01_ReplaceHatake){return true;} //#FUNC_01Another Flag:trueなら何もしない
+            //if(Main.config_F01_01_Replace2DirtFloor){return true;} //#FUNC_01Another Flag:trueなら何もしない
             
             //----debug------------------------------------------------------------------------
             /*
@@ -228,14 +233,24 @@ namespace s649FR
         [HarmonyPatch(typeof(Map), "MineFloor")]
         public static void Postfix(Map __instance, Point point, Chara c){
             if(Main.configDebugLogging){
-                Debug.Log("[FR]KD[" + ((Main.IsFunctionKeyDown)? "T" : "F") + "]");
+                //Debug.Log("[FR]KD[" + ((Main.IsFunctionKeyDown)? "T" : "F") + "]");
                 //Debug.Log("[FR]KD[" + ((Main.IsFunctionKeyDown)? "T" : "F") + "]");
             }
-            if(Main.config_F01_01_ReplaceHatake && ContainsChunk(point) && point.sourceFloor.id == 4){
+            if(Main.config_F01_01_Replace2DirtFloor && ContainsChunk(point)){//edit //v0.3.1.1
+                if(point.sourceFloor.id == 4){
+                    if(!Main.config_F01_00_a_ModDigOnField || Main.IsFunctionKeyDown){
+                        point.SetFloor(45, 40);
+                    }
+                } else {
+                    point.SetFloor(45, 40);
+                }
+            }
+            /*
+            if(Main.config_F01_01_Replace2DirtFloor && ContainsChunk(point) && point.sourceFloor.id == 4){
                 if(!Main.config_F01_00_a_ModDigOnField || Main.IsFunctionKeyDown){
                     point.SetFloor(45, 40);
                 }
-            }   
+            } */  
         }
         private static bool ContainsChunk(Point point){
             if(point.sourceFloor.components[0].Contains("chunk@soil") || point.sourceFloor.components[0].Contains("chunk@snow") || point.sourceFloor.components[0].Contains("chunk@ice")){
@@ -314,9 +329,15 @@ namespace s649FR
 
         internal static void ChangeFloor(string id)
         {
-            if(!Main.config_F02_01_ReplaceWaterFloor){
+            if(!Main.config_F02_01_ReplaceWaterFloor){//edit v0.3.1.0
                 return ;
             }
+            if(!Main.config_F02_01_a_ToggleReplaceWaterFloorFunction){//add v0.3.1.0
+                if(!Main.IsFunctionKeyDown){return;}
+            } else {
+                if(Main.IsFunctionKeyDown){return;}
+            }
+            
             SourceFloor.Row row = EClass.sources.floors.alias[id];
             if (pos.HasBridge)
             {
@@ -649,7 +670,7 @@ class ZonePatch {
         [HarmonyPrefix]
         [HarmonyPatch(typeof(TaskDig), "GetHitResult")]
         public static bool Prefix(TaskDig __instance, HitResult __result){
-            if(!Main.config_F01_01_ReplaceHatake){return true;} //#FUNC_01Another Flag:falseなら何もしない
+            if(!Main.config_F01_01_Replace2DirtFloor){return true;} //#FUNC_01Another Flag:falseなら何もしない
             
             //ここからバニラの除外処理
             if(EClass._zone.IsRegion && __instance.GetTreasureMap() != null) {
