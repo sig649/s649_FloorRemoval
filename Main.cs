@@ -15,7 +15,7 @@ using Debug = UnityEngine.Debug;
 
 namespace s649FR
 {
-    [BepInPlugin("s649_FloorRemoval", "s649 Floor Removal", "0.3.1.1")]  
+    [BepInPlugin("s649_FloorRemoval", "s649 Floor Removal", "0.3.2.0")]  
     public class Main : BaseUnityPlugin
     {
         private static ConfigEntry<bool> CE_F01_00_a_ModDigOnField;//#F_01_00_a
@@ -122,99 +122,134 @@ namespace s649FR
             if(point.sourceFloor.id == 4){
                 //Debug.Log("[FR]PointMat" + point.matFloor.id.ToString());
                 int matF = point.matFloor.id;
-                int num = UnityEngine.Random.Range(0, 49999);
+                int num = UnityEngine.Random.Range(0, 99999);
+                //int[] numbers = new listlize(num);
+                //int bingo = exeBingo(numbers);
                 int seed;
+                //string prod = "";
                 Thing t = null;
-                switch(num){//v0.2.0.0
-                    //lucky numbers
-                    case 0 : t = ThingGen.Create("medal");
+
+                if(Main.configDebugLogging){
+                    string text = "[FR]Gatya ";
+                    text += "[num:" + num.ToString() + "]";
+                    //text += "[Bingo:" + bingo.ToString() + "]";
+                    Debug.Log(text);
+                }
+
+                switch(num){//v0.3.2.0
+                    //SS rare
+                    case 0 : t = ThingGen.Create("828");//うみみゃあkouun
                     break;
-                    case 7 or 77: t = ThingGen.Create("ticket_fortune");
+                    case 1 : t = ThingGen.Create("659");//iyashi
                     break;
-                    case 17 or 27 or 37 or 47 or 57 or 67 or 87 or 97: t = ThingGen.Create("scratchcard");
+                    case 2 : t = ThingGen.Create("758");//genso
                     break;
-                    case 777 : 
-                        seed = EClass.pc.LV * 100;
-                        if(seed < 100){seed = 100;};
-                        t = ThingGen.CreateCurrency(UnityEngine.Random.Range(seed/10, seed*10));
+                    case 3 : t = ThingGen.Create("759");//daiti
                     break;
-                    case 7777 : 
-                        seed = EClass.pc.LV * 1000;
+                    case 4 : t = ThingGen.Create("806");//syuukaku
+                    break;
+                    case 5 : t = ThingGen.Create("1190");//wind
+                    break;
+                    case 6 : t = ThingGen.Create("1191");//machine
+                    break;
+                    case 7 or 77 or 777 or 7777 or 77777 : seed = EClass.pc.LV * 1000;
                         if(seed < 1000){seed = 1000;};
                         t = ThingGen.CreateCurrency(UnityEngine.Random.Range(seed, seed*100));
                     break;
+                    case 8 : t = ThingGen.Create("medal").SetNum(5);
+                    break;
+                    case 9 : t = ThingGen.Create("ticket_fortune").SetNum(EClass.rnd(9) + 1);
+                    break;
+                    case 10 : t = ThingGen.Create("scratchcard").SetNum((EClass.rnd(9) + 1) * 10);
+                    break;
 
-                    //rare number
-                    case  < 10 and >= 1 : t = ThingGen.Create("money2");//gold bar
+                    //S rare
+                    case >= 11 and < 50 : t = ThingGen.Create("map_treasure");
                     break;
-                    case < 20 and >= 10 : t = ThingGen.Create("plat");//platina
+                    case >= 50 and < 100 : t = ThingGen.Create("money2").SetNum(EClass.rnd(4) + 1);//gold bar
                     break;
-                    //case < 20 : t = ThingGen.Create("gacha_coin_plat");//platina
-                    //break;
-                    case < 25 and >= 21 : t = ThingGen.Create("gacha_coin_gold");
+                    case >= 100 and < 200 : t = ThingGen.Create("plat").SetNum(EClass.rnd(9) + 1);;//plat
                     break;
-                    case < 30 and >= 25 : t = ThingGen.Create("gacha_coin_silver");
+                    case >= 200 and < 250 : t = ThingGen.Create("gacha_coin_gold");
                     break;
-                    case < 50 and >= 30 : t = ThingGen.Create("gacha_coin");
+                    case >= 250 and < 350 : t = ThingGen.Create("gacha_coin_silver").SetNum(EClass.rnd(2) + 1);
                     break;
-                    case < 90 and >= 60 : t = ThingGen.Create("casino_coin").SetNum(EClass.rnd(9) + 1);
+                    case >= 350 and < 500 : t = ThingGen.Create("gacha_coin").SetNum(EClass.rnd(4) + 1);
+                    break;
+                    case >= 500 and < 750 : t = ThingGen.Create("casino_coin").SetNum((EClass.rnd(9) + 1) * 10);
+                    break;
+                    case >= 750 and < 1000: 
+                        seed = EClass.pc.LV * 10;
+                        if(seed < 10){seed = 10;};
+                        t = ThingGen.CreateCurrency(UnityEngine.Random.Range(seed/10, seed*10));
                     break;
 
                     //uncommon
-                    case < 200 and >= 100 : t = ThingGen.Create("seed");
+                    case >= 1000 and < 2000 : t = ThingGen.Create("seed");
                         break;
-                    case < 300 and >= 200 : t = ThingGen.Create("needle");
+                    case >= 2000 and < 3000 : t = ThingGen.Create("needle");
                         break;
-                    case < 400 and >= 300 : t = ThingGen.Create("scrap", 78);//plastic
+                    case >= 3000 and < 4000 : t = ThingGen.Create("scrap", 78);//plastic
                         break;
-                    case < 475 and >= 400 : t = ThingGen.Create("bone");
+                    case >= 4000 and < 5000 : t = ThingGen.Create("bone");
                         break;
-                    case < 500 and >= 475 : t = ThingGen.Create("725");//animal bone
+                    case >= 5000 and < 6000 : t = ThingGen.Create("725");//animal bone
                         break;
-                    case < 550 and >= 500 : t = ThingGen.Create("fang");
+                    case >= 6000 and < 7000 : t = ThingGen.Create("fang");
                         break;
-                    case < 600 and >= 550 : t = ThingGen.Create("skin");
+                    case >= 7000 and < 8000 : t = ThingGen.Create("skin");
                         break;
-                    case < 650 and >= 600 : t = ThingGen.Create("vine");
+                    case >= 8000 and < 9000 : t = ThingGen.Create("vine");
                         break;
-                    case < 700 and >= 650 : t = ThingGen.Create("branch");
+                    case >= 9000 and < 10000 : t = ThingGen.Create("branch");
                         break;
-                    case < 750 and >= 700 : t = ThingGen.Create("158");//stone rubble
+                    case >= 10000 and < 10500 : t = ThingGen.Create("158");//stone rubble
                         break;
-                    case < 800 and >= 750 : t = ThingGen.Create("181");//stone rubble
+                    case >= 10500 and < 11000 : t = ThingGen.Create("181");//stone rubble
                         break;
-                    case < 825 and >= 800 : t = ThingGen.Create("184");//rubble
+                    case >= 11000 and < 11500 : t = ThingGen.Create("184");//bone r
                         break;
-                    case < 850 and >= 825 : t = ThingGen.Create("185");//rubble
+                    case >= 11500 and < 12000 : t = ThingGen.Create("185");//bone r
                         break;
-                    case < 875 and >= 850 : t = ThingGen.Create("186");//rubble
+                    case >= 12000 and < 12500 : t = ThingGen.Create("186");//stone r
                         break;
-                    case < 900 and >= 875 : t = ThingGen.Create("187");//rubble
+                    case >= 12500 and < 13000 : t = ThingGen.Create("187");//stone r
                         break;
-                    case < 925 and >= 900 : t = ThingGen.Create("scrubber");//darekagasuteta
+                    case >= 13000 and < 13500 : t = ThingGen.Create("scrubber");//darekagasuteta
                         break;
-                    case < 950 and >= 925 : t = ThingGen.Create("tissue");//darekagasuteta
+                    case >= 13500 and < 14000 : t = ThingGen.Create("tissue");//darekagasuteta
                         break;
-                    case < 960 and >= 950 : t = ThingGen.Create("529");//can
+                    case >= 14000 and < 14333 : t = ThingGen.Create("529");//can
                         break; 
-                    case < 970 and >= 960 : t = ThingGen.Create("1170");//can
+                    case >= 14333 and < 14666 : t = ThingGen.Create("1170");//can
                         break; 
-                    case < 980 and >= 970 : t = ThingGen.Create("236");//can
+                    case >= 14666 and < 15000 : t = ThingGen.Create("236");//can
                         break;
-                    case < 985 and >= 980 : t = ThingGen.Create("726");//bottle
+                    case >= 15000 and < 16000 : t = ThingGen.Create("726");//bottle
                         break;
-                    case < 990 and >= 985 : t = ThingGen.Create("727");//bottle
+                    case >= 16000 and < 17000 : t = ThingGen.Create("728");//bottle
                         break;
-                    case < 995 and >= 990 : t = ThingGen.Create("728");//bottle
+                    case >= 17000 and < 17500  : t = ThingGen.Create("219");//map
+                        break;
+                    case >= 17500 and < 18000  : t = ThingGen.Create("220");//scroll
+                        break; 
+                    case >= 18000 and < 18500  : t = ThingGen.Create("221");//scroll
+                        break;
+                    case >= 18500 and < 19000  : t = ThingGen.Create("216");//paper
+                        break; 
+                    case >= 19000 and < 19500  : t = ThingGen.Create("217");//paper
+                        break;
+                    case >= 19500 and < 20000  : t = ThingGen.Create("218");//paper
+                        break;
+                    
+                    case >= 20000 and < 21000: t = ThingGen.Create("ore",78);//plastic
                         break;
                     //commmon
-                    case < 1500 and >= 1000: t = ThingGen.Create("ore",78);//plastic
+                    case >= 21000 and < 25000: t = ThingGen.Create("rock");
                         break;
-                    case < 3000 and >= 1500: t = ThingGen.Create("rock");
+                    case >= 25000 and < 35000 : t = ThingGen.Create("pebble").SetNum(EClass.rnd(1) + 1);
                         break;
-                    case < 10000 and >= 3000 : t = ThingGen.Create("pebble").SetNum(EClass.rnd(1) + 1);
-                        break;
-                    case < 20000 and >= 10000 : t = ThingGen.Create("stone").SetNum(EClass.rnd(4) + 1);
+                    case >= 35000 and < 50000 : t = ThingGen.Create("stone").SetNum(EClass.rnd(4) + 1);
                         break;
                     default  : t = ThingGen.Create("chunk",matF);//respectfloormaterial
                         break;
@@ -261,7 +296,55 @@ namespace s649FR
             } else {
                 return false;
             }
+        }    
+        /*
+        private int[] listlize(int n){
+            int num0,num1,num2,num3,num4;
+            if(n >= 10000){
+                num0 = n / 10000;
+                n = n - num0 * 10000;
+            } else {
+                num0 = 0;
+            }
+            if(n >= 1000){
+                num1 = n / 1000;
+                n = n - num1 * 1000;
+            } else {
+                num1 = 0;
+            }
+            if(n >= 100){
+                num2 = n / 100;
+                n = n - num2 * 100;
+            } else {
+                num2 = 0;
+            }
+            if(n >= 10){
+                num3 = n / 10;
+                n = n - num3 * 10;
+            } else {
+                num3 = 0;
+            }
+            num4 = n;
+            int[] res = new int[]{num0,num1,num2,num3,num4};
+            return res;
         }
+        private int exeBingo(int[] numbers){
+            int r = 0;
+            int hitnum = new int[]{0,0,0,0,0};
+            for(int i = 0;i < numbers.Length; i++){
+                for(int j = i + 1;j < numbers.Length; j++){
+                    if(numbers[i] == numbers[j]){
+                        hitnum[i] += 1;
+                    }
+                }
+            }
+            for(int i = 0; i < hitnum.Length; i++){
+                if(hitnum[i] >= r){
+                    r = hitnum[i];
+                }
+            }
+            return r;
+        }*/
     }
 
     [HarmonyPatch]
