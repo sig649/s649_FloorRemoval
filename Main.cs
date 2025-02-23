@@ -16,7 +16,7 @@ using Random = UnityEngine.Random;//v0.3.3.0 grep
 
 namespace s649FR
 {
-    [BepInPlugin("s649_FloorRemoval", "s649 Floor Removal", "0.3.3.0")]  
+    [BepInPlugin("s649_FloorRemoval", "s649 Floor Removal", "0.3.3.1")]  
     public class Main : BaseUnityPlugin
     {
         private static ConfigEntry<bool> CE_F01_00_a_ModDigOnField;//#F_01_00_a
@@ -272,6 +272,9 @@ namespace s649FR
         internal static int reroll(int num,int LUC){//v0.3.3.0 add
             int amari;
             while(LUC > 0){
+                if(IsLuckNumber(num)){//v0.3.3.1 edit
+                    break;
+                }
                 if(LUC > 1000){
                     //amari = (LUC > 100)?LUC % 100 : LUC;
                     //amari = (amari == 0)? 100: amari;
@@ -283,9 +286,7 @@ namespace s649FR
                     num = Random.Range(num * (200 - amari) / 200, num);
                     LUC -= 100;
                 }
-                if(IsLuckNumber(num)){
-                    break;
-                }
+                
             }
             return num;
         }
