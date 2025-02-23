@@ -1,3 +1,8 @@
+ここのページの情報は古い可能性があります  
+最新の物はSTEAMのページの方を参照してください  
+The information on this page may be out of date.  
+Please refer to the STEAM page for the latest information.  
+
 # summary
 Various items obtained when digging in the fields (experimental).
 Items you can get: chunks, stones, pebbles, rocks, some junk, branches, vines, fangs, needles, skins, bones, seeds, coins, etc.
