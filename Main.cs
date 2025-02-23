@@ -12,10 +12,11 @@ using BepInEx.Configuration;
 using System.IO;
 //using System.Diagnostics;
 using Debug = UnityEngine.Debug;
+using Random = UnityEngine.Random;//v0.3.3.0 grep
 
 namespace s649FR
 {
-    [BepInPlugin("s649_FloorRemoval", "s649 Floor Removal", "0.3.2.0")]  
+    [BepInPlugin("s649_FloorRemoval", "s649 Floor Removal", "0.3.3.0")]  
     public class Main : BaseUnityPlugin
     {
         private static ConfigEntry<bool> CE_F01_00_a_ModDigOnField;//#F_01_00_a
@@ -103,7 +104,7 @@ namespace s649FR
     public class MapExe{
         [HarmonyPrefix]
         [HarmonyPatch(typeof(Map), "MineFloor")]
-        public static bool Prefix(Map __instance, Point point, Chara c, bool recoverBlock, bool removePlatform){
+        public static bool MineFloorPrefix(Map __instance, Point point, Chara c, bool recoverBlock, bool removePlatform){//v0.3.3.0 namefix
             if(!Main.config_F01_00_a_ModDigOnField || Main.IsFunctionKeyDown){return true;} //#FUNC_01a Flag:falseならvanilla //
             //if(Main.config_F01_01_Replace2DirtFloor){return true;} //#FUNC_01Another Flag:trueなら何もしない
             
@@ -122,21 +123,26 @@ namespace s649FR
             if(point.sourceFloor.id == 4){
                 //Debug.Log("[FR]PointMat" + point.matFloor.id.ToString());
                 int matF = point.matFloor.id;
-                int num = UnityEngine.Random.Range(0, 99999);
+                int num = Random.Range(0, 249999);//v0.3.3.0 edit
+                int onum = num;
+                int LUC = EClass.pc.LUC;//v0.3.3.0
                 //int[] numbers = new listlize(num);
                 //int bingo = exeBingo(numbers);
                 int seed;
                 //string prod = "";
                 Thing t = null;
 
+                num = reroll(num, LUC);//v0.3.3.0
                 if(Main.configDebugLogging){
                     string text = "[FR]Gatya ";
                     text += "[num:" + num.ToString() + "]";
+                    text += "[onum:" + onum.ToString() + "]";
+                    text += "[LUC:" + LUC.ToString() + "]";
                     //text += "[Bingo:" + bingo.ToString() + "]";
                     Debug.Log(text);
                 }
 
-                switch(num){//v0.3.2.0
+                switch(num){//v0.3.3.0 edit
                     //SS rare
                     case 0 : t = ThingGen.Create("828");//うみみゃあkouun
                     break;
@@ -152,9 +158,9 @@ namespace s649FR
                     break;
                     case 6 : t = ThingGen.Create("1191");//machine
                     break;
-                    case 7 or 77 or 777 or 7777 or 77777 : seed = EClass.pc.LV * 1000;
-                        if(seed < 1000){seed = 1000;};
-                        t = ThingGen.CreateCurrency(UnityEngine.Random.Range(seed, seed*100));
+                    case 7 or 77 or 777 or 7777 or 77777 : seed = EClass.pc.LV * 100;//v0.3.3.0 nerf
+                        if(seed < 100){seed = 100;};
+                        t = ThingGen.CreateCurrency(Random.Range(seed, seed*100));
                     break;
                     case 8 : t = ThingGen.Create("medal").SetNum(5);
                     break;
@@ -181,7 +187,7 @@ namespace s649FR
                     case >= 750 and < 1000: 
                         seed = EClass.pc.LV * 10;
                         if(seed < 10){seed = 10;};
-                        t = ThingGen.CreateCurrency(UnityEngine.Random.Range(seed/10, seed*10));
+                        t = ThingGen.CreateCurrency(Random.Range(seed/10, seed*10));
                     break;
 
                     //uncommon
@@ -242,14 +248,14 @@ namespace s649FR
                     case >= 19500 and < 20000  : t = ThingGen.Create("218");//paper
                         break;
                     
-                    case >= 20000 and < 21000: t = ThingGen.Create("ore",78);//plastic
+                    case >= 20000 and < 25000: t = ThingGen.Create("ore",78);//plastic
                         break;
                     //commmon
-                    case >= 21000 and < 25000: t = ThingGen.Create("rock");
+                    case >= 25000 and < 50000: t = ThingGen.Create("rock");
                         break;
-                    case >= 25000 and < 35000 : t = ThingGen.Create("pebble").SetNum(EClass.rnd(1) + 1);
+                    case >= 50000 and < 100000 : t = ThingGen.Create("pebble").SetNum(EClass.rnd(1) + 1);
                         break;
-                    case >= 35000 and < 50000 : t = ThingGen.Create("stone").SetNum(EClass.rnd(4) + 1);
+                    case >= 100000 and < 150000 : t = ThingGen.Create("stone").SetNum(EClass.rnd(4) + 1);
                         break;
                     default  : t = ThingGen.Create("chunk",matF);//respectfloormaterial
                         break;
@@ -263,10 +269,37 @@ namespace s649FR
             }
             return true;
         }
+        internal static int reroll(int num,int LUC){//v0.3.3.0 add
+            int amari;
+            while(LUC > 0){
+                if(LUC > 1000){
+                    //amari = (LUC > 100)?LUC % 100 : LUC;
+                    //amari = (amari == 0)? 100: amari;
+                    num = Random.Range(num / 10, num);
+                    LUC /= 2;
+                } else {
+                    amari = (LUC > 100)?LUC % 100 : LUC;
+                    amari = (amari == 0)? 100: amari;
+                    num = Random.Range(num * (200 - amari) / 200, num);
+                    LUC -= 100;
+                }
+                if(IsLuckNumber(num)){
+                    break;
+                }
+            }
+            return num;
+        }
+        internal static bool IsLuckNumber(int n){//v0.3.3.0
+            switch(n){
+                case <= 10 :
+                case 77 or 777 or 7777 or 77777: return true;
+            }
+            return false;
+        }
 
         [HarmonyPostfix]
         [HarmonyPatch(typeof(Map), "MineFloor")]
-        public static void Postfix(Map __instance, Point point, Chara c){
+        public static void MineFloorPostfix(Map __instance, Point point, Chara c){//v0.3.3.0 namefix
             if(Main.configDebugLogging){
                 //Debug.Log("[FR]KD[" + ((Main.IsFunctionKeyDown)? "T" : "F") + "]");
                 //Debug.Log("[FR]KD[" + ((Main.IsFunctionKeyDown)? "T" : "F") + "]");
@@ -353,7 +386,7 @@ namespace s649FR
 
         [HarmonyPrefix]
         [HarmonyPatch(typeof(TraitPotionEmpty), "CanUse")]
-        internal static bool Prefix(Chara c, Point p, ref bool __result){
+        internal static bool CanUsePrePatch(Chara c, Point p, ref bool __result){//v0.3.3.0 namefix
             if(!Main.config_F02_00_DrawingWaterByEmptyBottle){return true;}
             if(p.cell.IsTopWater){
                 __result = p.cell.IsTopWaterAndNoSnow;
@@ -364,7 +397,7 @@ namespace s649FR
 
         [HarmonyPrefix]
         [HarmonyPatch(typeof(TraitPotionEmpty), "OnUse")]
-        internal static bool Prefix(Chara c, Point p,TraitPotionEmpty __instance, ref bool __result){
+        internal static bool OnUsePrePatch(Chara c, Point p,TraitPotionEmpty __instance, ref bool __result){//v0.3.3.0 namefix
             TraitWell well = __instance.GetWell(p);
             if(well == null){
                 SE.Play("water_farm");
