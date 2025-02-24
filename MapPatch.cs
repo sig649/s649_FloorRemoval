@@ -1,9 +1,11 @@
+using System;
+using System.IO;
 using BepInEx;
 using HarmonyLib;
 
 using UnityEngine;
 using BepInEx.Configuration;
-using System.IO;
+
 //using System.Diagnostics;
 using Debug = UnityEngine.Debug;
 using Random = UnityEngine.Random;//v0.3.3.0 grep
@@ -77,19 +79,11 @@ namespace s649FR {
                     //int bingo = exeBingo(numbers);
                     int seed;
                     int DLV = PatchMain.currentDLV;//v0.3.4.0
-                    string prod = "";
+                    string prod = "-";
                     Thing t = null;
 
                     num = reroll(num, LUC);//v0.3.3.0
-                    if(PatchMain.configDebugLogging){
-                        string text = "[FR]Gatya ";
-                        text += "[num:" + num.ToString() + "]";
-                        text += "[onum:" + onum.ToString() + "]";
-                        text += "[LUC:" + LUC.ToString() + "]";
-                        text += "[LV:" + EClass.pc.LV.ToString() + "]";
-                        //text += "[Bingo:" + bingo.ToString() + "]";
-                        Debug.Log(text);
-                    }
+                    
                     if(num <= 1000 || IsLuckNumber(num)){//v0.4.0.0
                         if(IsLuckNumber(num) || num < 50){
                             //あなたは財宝を掘り当てた SSR~SR
@@ -102,53 +96,74 @@ namespace s649FR {
                 
                     switch(num){//v0.4.0.0 edit
                         //SS rare(~7 or luckynumber)
-                        case 0 : t = (DLV >= 10)? ThingGen.Create("828") : ThingGen.Create("medal").SetNum(5);//うみみゃあkouun
+                        case 0 : prod = "828";
+                        t = (DLV >= 10)? ThingGen.Create(prod) : ThingGen.Create("medal").SetNum(5);//うみみゃあkouun
                         break;
-                        case 1 : t = (DLV >= 10)? ThingGen.Create("659") : ThingGen.Create("medal").SetNum(5);//iyashi 659
+                        case 1 : prod = "659";
+                        t = (DLV >= 10)? ThingGen.Create(prod) : ThingGen.Create("medal").SetNum(5);//iyashi 659
                         break;
-                        case 2 : t = (DLV >= 10)? ThingGen.Create("758") : ThingGen.Create("medal").SetNum(5);//genso 758
+                        case 2 : prod = "758";
+                        t = (DLV >= 10)? ThingGen.Create(prod) : ThingGen.Create("medal").SetNum(5);//genso 758
                         break;
-                        case 3 : t = (DLV >= 10)? ThingGen.Create("759") : ThingGen.Create("medal").SetNum(5);//daiti 759
+                        case 3 : prod = "759";
+                        t = (DLV >= 10)? ThingGen.Create(prod) : ThingGen.Create("medal").SetNum(5);//daiti 759
                         break;
-                        case 4 : t = (DLV >= 10)? ThingGen.Create("806") : ThingGen.Create("medal").SetNum(5);//syuukaku 806
+                        case 4 : prod = "806";
+                        t = (DLV >= 10)? ThingGen.Create(prod) : ThingGen.Create("medal").SetNum(5);//syuukaku 806
                         break;
-                        case 5 : t = (DLV >= 10)? ThingGen.Create("1190") : ThingGen.Create("medal").SetNum(5);//wind 1190
+                        case 5 : prod = "1190";
+                        t = (DLV >= 10)? ThingGen.Create(prod) : ThingGen.Create("medal").SetNum(5);//wind 1190
                         break;
-                        case 6 : t = (DLV >= 10)? ThingGen.Create("1191") : ThingGen.Create("medal").SetNum(5);//machine 1191
+                        case 6 : prod = "1191";
+                        t = (DLV >= 10)? ThingGen.Create(prod) : ThingGen.Create("medal").SetNum(5);//machine 1191
                         break;
-                        case 7 or 77 or 777 or 7777 or 77777 or 777777: seed = EClass.pc.LV * 1000;//v0.4.0.0 num add
+                        case 7 or 77 or 777 or 7777 or 77777 or 777777:
+                        prod = "777";
+                        seed = EClass.pc.LV * 1000;//v0.4.0.0 num add
                         if(seed < 1000){seed = 1000;};
-                        if(DLV > 0){seed *= (DLV /10);}//v0.3.4.0
-                        t = ThingGen.CreateCurrency(Random.Range(seed, seed*2));
+                        int DLVinf = (DLV > 0)?(int)Math.Sqrt(DLV):1;//v0.4.0.0
+                        if(DLVinf < 1){DLVinf = 1;} else if(DLVinf > 100){DLVinf = 100;}//v0.4.0.0
+                        if(DLV > 0){seed *= DLVinf;}//v0.4.0.0 change
+                        t = ThingGen.CreateCurrency((int)(seed * Random.Range(1f, 2f)));//v0.4.0.0 tweak
                         break;
 
                         //S rare(~50)
-                        case >= 8 and < 25: t = ThingGen.Create("medal").SetNum((EClass.rnd(3) + 1));//v0.4.0.0 down
+                        case >= 8 and < 25: prod = "medal";
+                        t = ThingGen.Create("medal").SetNum((EClass.rnd(3) + 1));//v0.4.0.0 down
                         break;
-                        case >= 25 and < 50: t = ThingGen.Create("map_treasure");//v0.4.0.0 moved
+                        case >= 25 and < 50: prod = "map_treasure";
+                        t = ThingGen.Create("map_treasure");//v0.4.0.0 moved
                         break;
 
                         //rare(~1000)
-                        case >= 50 and < 100 : t = ThingGen.Create("ticket_fortune").SetNum(EClass.rnd(5) + 1);//v0.4.0.0 down
+                        case >= 50 and < 100 : prod = "ticket_fortune";
+                        t = ThingGen.Create("ticket_fortune").SetNum(EClass.rnd(5) + 1);//v0.4.0.0 down
                         break;
-                        case >= 100 and < 150 :  t = ThingGen.Create("scratchcard").SetNum((EClass.rnd(5) + 1) * 2);//v0.4.0.0 edit
+                        case >= 100 and < 150 :  prod = "scratchcard";
+                        t = ThingGen.Create("scratchcard").SetNum((EClass.rnd(5) + 1) * 2);//v0.4.0.0 edit
                         break;
-                        case >= 150 and < 250 : t = ThingGen.Create("money2").SetNum(EClass.rnd(5) + 1);//gold bar
+                        case >= 150 and < 250 : prod = "money2";
+                        t = ThingGen.Create("money2").SetNum(EClass.rnd(5) + 1);//gold bar
                         break;
-                        case >= 250 and < 350 : t = ThingGen.Create("plat").SetNum(EClass.rnd(10) + 1);;//plat
+                        case >= 250 and < 350 : prod = "plat";
+                        t = ThingGen.Create("plat").SetNum(EClass.rnd(10) + 1);;//plat
                         break;
-                        case >= 350 and < 400 : t = ThingGen.Create("gacha_coin_gold");
+                        case >= 350 and < 400 : prod = "gacha_coin_gold";
+                        t = ThingGen.Create("gacha_coin_gold");
                         break;
-                        case >= 400 and < 450 : t = ThingGen.Create("gacha_coin_silver").SetNum(EClass.rnd(2) + 1);
+                        case >= 400 and < 450 : prod = "gacha_coin_silver";
+                        t = ThingGen.Create("gacha_coin_silver").SetNum(EClass.rnd(2) + 1);
                         break;
-                        case >= 450 and < 500 : t = ThingGen.Create("gacha_coin").SetNum(EClass.rnd(5) + 1);
+                        case >= 450 and < 500 : prod = "gacha_coin";
+                        t = ThingGen.Create("gacha_coin").SetNum(EClass.rnd(5) + 1);
                         break;
-                        case >= 500 and < 750 : t = ThingGen.Create("casino_coin").SetNum(Random.Range(10,100));
+                        case >= 500 and < 750 : prod = "casino_coin";
+                        t = ThingGen.Create("casino_coin").SetNum((int)(Random.Range(1f,10f) * 10));
                         break;
-                        case >= 750 and < 1000: 
-                        seed = EClass.pc.LV * 10;
-                        if(seed < 10){seed = 10;}
-                        t = ThingGen.CreateCurrency(Random.Range(seed/10, seed*10));
+                        case >= 750 and < 1000: prod = "oren";//v0.4.0.0 tweak
+                        seed = EClass.pc.LV * 100;
+                        if(seed < 100){seed = 100;}
+                        t = ThingGen.CreateCurrency((int)(Random.Range(1f, 10f) * seed));
                         break;
 
                         //uncommon+(~25000)
@@ -214,7 +229,7 @@ namespace s649FR {
                             }
                             break;
                             case "can" : 
-                                string[] canlist = new string[]{"236","519","1170"};
+                                string[] canlist = new string[]{"236","529","1170"};//v0.4.0.0fix
                                 //prod = canlist[Random.Range(0, canlist.Length)];
                                 //prod = GetListRandom(canlist);
                                 t = ThingGen.Create(GetListRandom(canlist));
@@ -228,8 +243,19 @@ namespace s649FR {
                                 t = ThingGen.Create(GetListRandom(paperlist));
                             break;
                             case "grave" : 
-                                string[] gravelist = new string[]{"930","950","951","952","931","947","948","949","944","945","946"};//grave : 930,950,951,952,931,947,948,949,944,945,946
+                            if(EClass.rnd(10) == 0){//gold
+                                switch(EClass.rnd(3)){
+                                    case 0 :t = ThingGen.Create("944");
+                                    break;
+                                    case 1 :t = ThingGen.Create("945");
+                                    break;
+                                    default :t = ThingGen.Create("946");
+                                    break;
+                                }
+                            } else {
+                                string[] gravelist = new string[]{"930","950","951","952","931","947","948","949"};//grave : 930,950,951,952,931,947,948,949,944,945,946
                                 t = ThingGen.Create(GetListRandom(gravelist));
+                            } 
                             break;
                             case "wood" : //wood r : 182,183
                             if(EClass.rnd(2) == 0){
@@ -245,7 +271,7 @@ namespace s649FR {
                                 if(EClass.rnd(2) == 0){
                                     t = ThingGen.Create("1178");
                                 } else {
-                                    t = ThingGen.Create("1190");
+                                    t = ThingGen.Create("1179");
                                 }
                             }
                             break;
@@ -262,11 +288,14 @@ namespace s649FR {
                     
                     
                         //commmon(~500000)
-                        case >= 100000 and < 200000: t = ThingGen.Create("rock");
+                        case >= 100000 and < 200000: prod = "rock";
+                        t = ThingGen.Create("rock");
                         break;
-                        case >= 200000 and < 300000 : t = ThingGen.Create("pebble").SetNum(EClass.rnd(2) + 1);
+                        case >= 200000 and < 300000 : prod = "pebble";
+                        t = ThingGen.Create("pebble").SetNum(EClass.rnd(2) + 1);
                         break;
-                        case >= 300000 and < 500000 : t = ThingGen.Create("stone").SetNum(EClass.rnd(5) + 1);
+                        case >= 300000 and < 500000 : prod = "stone";
+                        t = ThingGen.Create("stone").SetNum(EClass.rnd(5) + 1);
                         break;
                         default  : t = ThingGen.Create("chunk",matF);//respectfloormaterial
                         break;
@@ -275,8 +304,20 @@ namespace s649FR {
                         //c.Pick(t);
                         __instance.TrySmoothPick(point, t, c);
                     }
+                    if(PatchMain.configDebugLogging){
+                        string text = "[FR]Gatya ";
+                        text += "[num:" + num.ToString() + "]";
+                        text += "[onum:" + onum.ToString() + "]";
+                        text += "[LUC:" + LUC.ToString() + "]";
+                        text += "[LV:" + EClass.pc.LV.ToString() + "]";
+                        text += "[DLV:" + DLV.ToString() + "]";
+                        text += "[prod:" + prod + "]";
+                        
+                        Debug.Log(text);
+                    }
                     return false;
                 }
+                
                 return true;
             }
 
@@ -296,12 +337,7 @@ namespace s649FR {
                         point.SetFloor(45, 40);
                     }
                 }
-                /*
-                if(Main.config_F01_01_Replace2DirtFloor && ContainsChunk(point) && point.sourceFloor.id == 4){
-                if(!Main.config_F01_00_a_ModDigOnField || Main.IsFunctionKeyDown){
-                    point.SetFloor(45, 40);
-                }
-                } */  
+                
             }
             private static bool ContainsChunk(Point point){
                 if(point.sourceFloor.components[0].Contains("chunk@soil") || point.sourceFloor.components[0].Contains("chunk@snow") || point.sourceFloor.components[0].Contains("chunk@ice")){
@@ -318,10 +354,16 @@ namespace s649FR {
 }
 
 
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
+///trash box
 
 
-
-
+/*
+                if(Main.config_F01_01_Replace2DirtFloor && ContainsChunk(point) && point.sourceFloor.id == 4){
+                if(!Main.config_F01_00_a_ModDigOnField || Main.IsFunctionKeyDown){
+                    point.SetFloor(45, 40);
+                }
+                } */  
 
 
 
