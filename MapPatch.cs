@@ -23,12 +23,14 @@ namespace s649FR {
                     if(LUC > 1000){
                         //amari = (LUC > 100)?LUC % 100 : LUC;
                         //amari = (amari == 0)? 100: amari;
-                        num = Random.Range(num / 10, num);
-                        LUC /= 2;
+                        num = (int)(num * Random.Range(0.1f,1.0f));//v0.4.0.0
+                        LUC /= 10;//v0.4.0.0 edit
                     } else {
                         amari = (LUC > 100)?LUC % 100 : LUC;
                         amari = (amari == 0)? 100: amari;
-                        num = Random.Range(num * (200 - amari) / 200, num);
+                        //num = Random.Range(num * (200 - amari) / 200, num);
+                        num = (int)(num * Random.Range((float)((200 - amari)/200f), 1.0f));//v0.4.0.0
+
                         LUC -= 100;
                     }
                 }
