@@ -16,7 +16,7 @@ using Random = UnityEngine.Random;//v0.3.3.0 grep
 
 namespace s649FR
 {
-    [BepInPlugin("s649_FloorRemoval", "s649 Floor Removal", "0.3.3.1")]  
+    [BepInPlugin("s649_FloorRemoval", "s649 Floor Removal", "0.3.5.0")]  
     public class Main : BaseUnityPlugin
     {
         private static ConfigEntry<bool> CE_F01_00_a_ModDigOnField;//#F_01_00_a
@@ -38,7 +38,8 @@ namespace s649FR
 
         public static bool IsFunctionKeyDown = false;//v0.3.0.0
         public static bool configDebugLogging => CE_DebugLogging.Value;
-        
+
+        internal static int currentDLV = 0;//v0.3.4.0 
         private void LoadConfig()
         {
             CE_F02_00_DrawingWaterByEmptyBottle = Config.Bind("#FUNC_02_00", "DRAWING_WATER_BY_EMPTY_BOTTLE", true, "If true, you can drawing water from floor of water by empty bottle");
@@ -62,7 +63,7 @@ namespace s649FR
                 return false;
             }
         }*/
-         public string TorF(bool b){
+        private string TorF(bool b){//v0.3.4.0 ->private
             return (b)? "T": "F";
         }
         private void Start()
@@ -101,10 +102,10 @@ namespace s649FR
     }
     //++++EXE++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     [HarmonyPatch]
-    public class MapExe{
+    internal class MapExe{//v0.3.4.0 ->internal
         [HarmonyPrefix]
         [HarmonyPatch(typeof(Map), "MineFloor")]
-        public static bool MineFloorPrefix(Map __instance, Point point, Chara c, bool recoverBlock, bool removePlatform){//v0.3.3.0 namefix
+        internal static bool MineFloorPrefix(Map __instance, Point point, Chara c, bool recoverBlock, bool removePlatform){//v0.3.4.0 ->internal  //v0.3.3.0 namefix
             if(!Main.config_F01_00_a_ModDigOnField || Main.IsFunctionKeyDown){return true;} //#FUNC_01a Flag:falseならvanilla //
             //if(Main.config_F01_01_Replace2DirtFloor){return true;} //#FUNC_01Another Flag:trueなら何もしない
             
@@ -123,13 +124,14 @@ namespace s649FR
             if(point.sourceFloor.id == 4){
                 //Debug.Log("[FR]PointMat" + point.matFloor.id.ToString());
                 int matF = point.matFloor.id;
-                int num = Random.Range(0, 249999);//v0.3.3.0 edit
+                int num = EClass.rnd(1000000);//v0.3.5.0 edit
                 int onum = num;
                 int LUC = EClass.pc.LUC;//v0.3.3.0
                 //int[] numbers = new listlize(num);
                 //int bingo = exeBingo(numbers);
                 int seed;
-                //string prod = "";
+                int DLV = Main.currentDLV;//v0.3.4.0
+                string prod = "";
                 Thing t = null;
 
                 num = reroll(num, LUC);//v0.3.3.0
@@ -138,51 +140,64 @@ namespace s649FR
                     text += "[num:" + num.ToString() + "]";
                     text += "[onum:" + onum.ToString() + "]";
                     text += "[LUC:" + LUC.ToString() + "]";
+                    text += "[LV:" + EClass.pc.LV.ToString() + "]";
                     //text += "[Bingo:" + bingo.ToString() + "]";
                     Debug.Log(text);
                 }
+                if(num <= 1000 || IsLuckNumber(num)){//v0.3.5.0
+                    if(IsLuckNumber(num) || num < 50){
+                        //あなたは財宝を掘り当てた SSR~SR
+                        Msg.Say("ding_skill");
+                    } else {
+                        Msg.Say("dropReward");// R
+                    }
+                    
+                }
+                
+                switch(num){//v0.3.5.0 edit
+                    //SS rare(~7 or luckynumber)
+                    case 0 : t = (DLV >= 10)? ThingGen.Create("828") : ThingGen.Create("medal").SetNum(5);//うみみゃあkouun
+                    break;
+                    case 1 : t = (DLV >= 10)? ThingGen.Create("659") : ThingGen.Create("medal").SetNum(5);//iyashi 659
+                    break;
+                    case 2 : t = (DLV >= 10)? ThingGen.Create("758") : ThingGen.Create("medal").SetNum(5);//genso 758
+                    break;
+                    case 3 : t = (DLV >= 10)? ThingGen.Create("759") : ThingGen.Create("medal").SetNum(5);//daiti 759
+                    break;
+                    case 4 : t = (DLV >= 10)? ThingGen.Create("806") : ThingGen.Create("medal").SetNum(5);//syuukaku 806
+                    break;
+                    case 5 : t = (DLV >= 10)? ThingGen.Create("1190") : ThingGen.Create("medal").SetNum(5);//wind 1190
+                    break;
+                    case 6 : t = (DLV >= 10)? ThingGen.Create("1191") : ThingGen.Create("medal").SetNum(5);//machine 1191
+                    break;
+                    case 7 or 77 or 777 or 7777 or 77777 or 777777: seed = EClass.pc.LV * 1000;//v0.3.5.0 num add
+                        if(seed < 1000){seed = 1000;};
+                        if(DLV > 0){seed *= (DLV /10);}//v0.3.4.0
+                        t = ThingGen.CreateCurrency(Random.Range(seed, seed*2));
+                    break;
 
-                switch(num){//v0.3.3.0 edit
-                    //SS rare
-                    case 0 : t = ThingGen.Create("828");//うみみゃあkouun
+                    //S rare(~50)
+                    case >= 8 and >=25: t = ThingGen.Create("medal").SetNum((EClass.rnd(3) + 1));//v0.3.5.0 down
                     break;
-                    case 1 : t = ThingGen.Create("659");//iyashi
-                    break;
-                    case 2 : t = ThingGen.Create("758");//genso
-                    break;
-                    case 3 : t = ThingGen.Create("759");//daiti
-                    break;
-                    case 4 : t = ThingGen.Create("806");//syuukaku
-                    break;
-                    case 5 : t = ThingGen.Create("1190");//wind
-                    break;
-                    case 6 : t = ThingGen.Create("1191");//machine
-                    break;
-                    case 7 or 77 or 777 or 7777 or 77777 : seed = EClass.pc.LV * 100;//v0.3.3.0 nerf
-                        if(seed < 100){seed = 100;};
-                        t = ThingGen.CreateCurrency(Random.Range(seed, seed*100));
-                    break;
-                    case 8 : t = ThingGen.Create("medal").SetNum(5);
-                    break;
-                    case 9 : t = ThingGen.Create("ticket_fortune").SetNum(EClass.rnd(9) + 1);
-                    break;
-                    case 10 : t = ThingGen.Create("scratchcard").SetNum((EClass.rnd(9) + 1) * 10);
+                    case >= 25 and < 50: t = ThingGen.Create("map_treasure");//v0.3.5.0 moved
                     break;
 
-                    //S rare
-                    case >= 11 and < 50 : t = ThingGen.Create("map_treasure");
+                    //rare(~1000)
+                    case >= 50 and < 100 : t = ThingGen.Create("ticket_fortune").SetNum(EClass.rnd(5) + 1);//v0.3.5.0 down
                     break;
-                    case >= 50 and < 100 : t = ThingGen.Create("money2").SetNum(EClass.rnd(4) + 1);//gold bar
+                    case >= 100 and < 150 :  t = ThingGen.Create("scratchcard").SetNum((EClass.rnd(5) + 1) * 2);//v0.3.5.0 edit
                     break;
-                    case >= 100 and < 200 : t = ThingGen.Create("plat").SetNum(EClass.rnd(9) + 1);;//plat
+                    case >= 150 and < 250 : t = ThingGen.Create("money2").SetNum(EClass.rnd(5) + 1);//gold bar
                     break;
-                    case >= 200 and < 250 : t = ThingGen.Create("gacha_coin_gold");
+                    case >= 250 and < 350 : t = ThingGen.Create("plat").SetNum(EClass.rnd(10) + 1);;//plat
                     break;
-                    case >= 250 and < 350 : t = ThingGen.Create("gacha_coin_silver").SetNum(EClass.rnd(2) + 1);
+                    case >= 350 and < 400 : t = ThingGen.Create("gacha_coin_gold");
                     break;
-                    case >= 350 and < 500 : t = ThingGen.Create("gacha_coin").SetNum(EClass.rnd(4) + 1);
+                    case >= 400 and < 450 : t = ThingGen.Create("gacha_coin_silver").SetNum(EClass.rnd(2) + 1);
                     break;
-                    case >= 500 and < 750 : t = ThingGen.Create("casino_coin").SetNum((EClass.rnd(9) + 1) * 10);
+                    case >= 450 and < 500 : t = ThingGen.Create("gacha_coin").SetNum(EClass.rnd(5) + 1);
+                    break;
+                    case >= 500 and < 750 : t = ThingGen.Create("casino_coin").SetNum(Random.Range(10,100));
                     break;
                     case >= 750 and < 1000: 
                         seed = EClass.pc.LV * 10;
@@ -190,17 +205,26 @@ namespace s649FR
                         t = ThingGen.CreateCurrency(Random.Range(seed/10, seed*10));
                     break;
 
-                    //uncommon
+                    //uncommon+(~25000)
+                    case >= 1000 and < 25000 : 
+                        string[] ucPlasList = new string[]{"seed","needle","bone","fang","skin","vine","branch","ore"};
+                        //prod = ucPlasList[Random.Range(0, ucPlasList.Length)];
+                        prod = GetListRandom(ucPlasList);
+                        if(prod == "ore"){
+                            t = ThingGen.Create(prod, 78);//plastic ore
+                        } else {
+                            t = ThingGen.Create(prod);
+                        }
+                    break;
+                    /*
                     case >= 1000 and < 2000 : t = ThingGen.Create("seed");
                         break;
                     case >= 2000 and < 3000 : t = ThingGen.Create("needle");
                         break;
-                    case >= 3000 and < 4000 : t = ThingGen.Create("scrap", 78);//plastic
-                        break;
+                    
                     case >= 4000 and < 5000 : t = ThingGen.Create("bone");
                         break;
-                    case >= 5000 and < 6000 : t = ThingGen.Create("725");//animal bone
-                        break;
+                    
                     case >= 6000 and < 7000 : t = ThingGen.Create("fang");
                         break;
                     case >= 7000 and < 8000 : t = ThingGen.Create("skin");
@@ -208,6 +232,110 @@ namespace s649FR
                     case >= 8000 and < 9000 : t = ThingGen.Create("vine");
                         break;
                     case >= 9000 and < 10000 : t = ThingGen.Create("branch");
+                        break;
+                    case >= 20000 and < 25000: t = ThingGen.Create("ore",78);//plastic ore
+                        break;
+                    */
+                    //uncommon(~100000)  junk? hahaha...
+                    case >= 25000 and < 100000 : 
+                        /* uncommon list
+                        animal bone : 725 
+                        scrap@plast : scrap@78
+                        //stone r : 158 , 181  //nanimodenai
+                        scrubber, tissue //darekagasuteta
+                        can : 236, 529, 1170
+                        bottle : 726, 727,728
+                        paper : 191, 193, 196, 197, 219, 220, 221 216, 217, 218, 206,207, 729,730
+                        1172 : completely worthless ...  to->scrap
+                        grave : 930,950,951,952,931,947,948,949,944,945,946
+                        wood r : 182,183
+                        rubber : 1178,1179
+                        Lcat : 1180 => rubber
+                        rope : 209,210
+                        fish bone : 738 -> bone
+                        fossil : 1053 -> bone
+                        haizai : 891,892 -> scrap
+                        */
+                        string[] uclist = new string[]{"bone","scrap","suteta","can","bottle","paper","grave","wood","rubber","rope"};
+                        //prod = uclist[Random.Range(0, uclist.Length)];
+                        prod = GetListRandom(uclist);
+                        switch(prod){
+                            case "bone" : if(EClass.rnd(10) == 0){
+                                t = ThingGen.Create("1053");//fossil
+                            } else {
+                                if(EClass.rnd(2) == 0){
+                                    t = ThingGen.Create("725");//animal
+                                } else {
+                                    t = ThingGen.Create("738");//fish
+                                }
+                            }
+                            break;
+                            case "scrap" : if(EClass.rnd(2) == 0){
+                                t = ThingGen.Create("scrap", 78);//plastic
+                            } else {
+                                if(EClass.rnd(2) == 0){
+                                    t = ThingGen.Create("891");//haizai1
+                                } else {
+                                    t = ThingGen.Create("892"); //haizai2
+                                }
+                            }
+                            break;
+                            case "suteta" :  if(EClass.rnd(2) == 0){
+                                t = ThingGen.Create("scrubber");
+                            } else {
+                                t = ThingGen.Create("tissue");
+                            }
+                            break;
+                            case "can" : 
+                                string[] canlist = new string[]{"236","519","1170"};
+                                //prod = canlist[Random.Range(0, canlist.Length)];
+                                //prod = GetListRandom(canlist);
+                                t = ThingGen.Create(GetListRandom(canlist));
+                            break;
+                            case "bottle" : 
+                                string[] bottlelist = new string[]{"236","519","1170"};
+                                t = ThingGen.Create(GetListRandom(bottlelist));
+                            break;
+                            case "paper" : 
+                                string[] paperlist = new string[]{"191","193","196","197","219","220","221","216","217","218","206","207","729","730"};
+                                t = ThingGen.Create(GetListRandom(paperlist));
+                            break;
+                            case "grave" : 
+                                string[] gravelist = new string[]{"930","950","951","952","931","947","948","949","944","945","946"};//grave : 930,950,951,952,931,947,948,949,944,945,946
+                                t = ThingGen.Create(GetListRandom(gravelist));
+                            break;
+                            case "wood" : //wood r : 182,183
+                            if(EClass.rnd(2) == 0){
+                                t = ThingGen.Create("182");
+                            } else {
+                                t = ThingGen.Create("183");
+                            }
+                            break;
+                            case "rubber" : //rubber : 1178,1179  Lcat : 1180 => rubber
+                            if(EClass.rnd(10) == 0){
+                                t = ThingGen.Create("1180");
+                            } else {
+                                if(EClass.rnd(2) == 0){
+                                    t = ThingGen.Create("1178");
+                                } else {
+                                    t = ThingGen.Create("1190");
+                                }
+                            }
+                            break;
+                            case "rope" : if(EClass.rnd(2) == 0){//rope : 209,210
+                                t = ThingGen.Create("209");
+                            } else {
+                                t = ThingGen.Create("210");
+                            }
+                            break;
+                            default : 
+                            break;
+                        }
+                    break;
+                    /*
+                    case >= 5000 and < 6000 : t = ThingGen.Create("725");//animal bone
+                        break;
+                    case >= 3000 and < 4000 : t = ThingGen.Create("scrap", 78);//plastic
                         break;
                     case >= 10000 and < 10500 : t = ThingGen.Create("158");//stone rubble
                         break;
@@ -247,15 +375,14 @@ namespace s649FR
                         break;
                     case >= 19500 and < 20000  : t = ThingGen.Create("218");//paper
                         break;
+                    */
                     
-                    case >= 20000 and < 25000: t = ThingGen.Create("ore",78);//plastic
+                    //commmon(~500000)
+                    case >= 100000 and < 200000: t = ThingGen.Create("rock");
                         break;
-                    //commmon
-                    case >= 25000 and < 50000: t = ThingGen.Create("rock");
+                    case >= 200000 and < 300000 : t = ThingGen.Create("pebble").SetNum(EClass.rnd(2) + 1);
                         break;
-                    case >= 50000 and < 100000 : t = ThingGen.Create("pebble").SetNum(EClass.rnd(1) + 1);
-                        break;
-                    case >= 100000 and < 150000 : t = ThingGen.Create("stone").SetNum(EClass.rnd(4) + 1);
+                    case >= 300000 and < 500000 : t = ThingGen.Create("stone").SetNum(EClass.rnd(5) + 1);
                         break;
                     default  : t = ThingGen.Create("chunk",matF);//respectfloormaterial
                         break;
@@ -272,7 +399,7 @@ namespace s649FR
         internal static int reroll(int num,int LUC){//v0.3.3.0 add
             int amari;
             while(LUC > 0){
-                if(IsLuckNumber(num)){//v0.3.3.1 edit
+                if(IsLuckNumber(num)){//v0.3.3.1 moved
                     break;
                 }
                 if(LUC > 1000){
@@ -290,21 +417,26 @@ namespace s649FR
             }
             return num;
         }
-        internal static bool IsLuckNumber(int n){//v0.3.3.0
+        internal static bool IsLuckNumber(int n){//v0.3.5.0 edit
             switch(n){
-                case <= 10 :
-                case 77 or 777 or 7777 or 77777: return true;
+                case <= 50 : return true;
+                case 77 or 777 or 7777 or 77777 or 777777: return true;
             }
             return false;
+        }
+        internal static string GetListRandom(string[] sList){//v0.3.5.0
+            if(sList == null){return ""} else {
+                return sList[Random.Range(0,sList.Length)];
+            }
         }
 
         [HarmonyPostfix]
         [HarmonyPatch(typeof(Map), "MineFloor")]
-        public static void MineFloorPostfix(Map __instance, Point point, Chara c){//v0.3.3.0 namefix
-            if(Main.configDebugLogging){
+        internal static void MineFloorPostfix(Map __instance, Point point, Chara c){//v0.3.4.0 ->internal   //v0.3.3.0 namefix
+            //if(Main.configDebugLogging){
                 //Debug.Log("[FR]KD[" + ((Main.IsFunctionKeyDown)? "T" : "F") + "]");
                 //Debug.Log("[FR]KD[" + ((Main.IsFunctionKeyDown)? "T" : "F") + "]");
-            }
+            //}
             if(Main.config_F01_01_Replace2DirtFloor && ContainsChunk(point)){//edit //v0.3.1.1
                 if(point.sourceFloor.id == 4){
                     if(!Main.config_F01_00_a_ModDigOnField || Main.IsFunctionKeyDown){
@@ -382,8 +514,8 @@ namespace s649FR
     }
 
     [HarmonyPatch]
-    public class TraitPotionEmptyPatch{
-        internal static Point pos = null;
+    internal class TraitPotionEmptyPatch{//v0.3.4.0 ->internal
+        private static Point pos = null; //v0.3.4.0 ->private
 
         [HarmonyPrefix]
         [HarmonyPatch(typeof(TraitPotionEmpty), "CanUse")]
@@ -444,8 +576,7 @@ namespace s649FR
             return true;
         }
 
-        internal static void ChangeFloor(string id)
-        {
+        private static void ChangeFloor(string id){//v0.3.4.0 ->private
             if(!Main.config_F02_01_ReplaceWaterFloor){//edit v0.3.1.0
                 return ;
             }
@@ -476,39 +607,10 @@ namespace s649FR
             pos.RefreshNeighborTiles();
         }
         
-    }
-    /*
-    [HarmonyPatch]
-    public class TaskPlowModding{   //v0.1.1.0
-        [HarmonyPrefix]
-        [HarmonyPatch(typeof(TaskPlow), "GetHitResult")]
-        public static bool Prefix(HitResult __result, TaskPlow __instance){
-            Point pos = __instance.pos;
-            if(pos.cell.IsTopWater || pos.HasObj){return true;}
-            if(pos.IsFarmField){
-                __result = HitResult.Valid;
-                return false;
-            }
-            return true;
-        }
-
-        [HarmonyPrefix]
-        [HarmonyPatch(typeof(TaskPlow), "CanPerform")]
-        public static bool Prefix(bool __result, TaskPlow __instance){
-            Point pos = __instance.pos;
-            if(pos.IsFarmField){
-                __result = true;
-                return false;
-            }
-            return true;
-        }
-    }
-    */
-    /*
-    [HarmonyPatch(typeof(Zone))]
-    [HarmonyPatch(nameof(Zone.Activate))]
-    class ZonePatch {
-        static void Postfix(Zone __instance) {
+        [HarmonyPatch(typeof(Zone))]//v0.3.4.0
+        [HarmonyPatch(nameof(Zone.Activate))]
+        internal static class ZonePatch {
+            private static void Postfix(Zone __instance) {
             // コンフィグファイルが変更されていたらリロード
             
             //if (File.GetLastWriteTime(Config.ConfigFilePath) > Main.LastConfigLoadTime) {
@@ -516,23 +618,18 @@ namespace s649FR
             //    Main.LastConfigLoadTime = DateTime.Now;
             //    Debug.Log("[VT] Configuration reloaded due to Zone.Activate.");
             //}
-            
-            Main.LoadConfig();
-            Debug.Log("[VT] Configuration reloaded due to Zone.Activate.");
+                
+                //    Main.LoadConfig();
+                //    Debug.Log("[FR] Configuration reloaded due to Zone.Activate.");
+                
+                if(Main.configDebugLogging){
+                //Debug.Log("[FR]CALLED : Zone.Activate " + __instance.ToString());
+                Debug.Log("[FR]Zone : [DLV : " + __instance.DangerLv.ToString() + "]");
+                }
+                Main.currentDLV = __instance.DangerLv;  //v0.3.4.0
+            }
         }
     }
-    */
-    /*
-    [HarmonyPatch]
-    public class PostExe{
-        [HarmonyPostfix]
-        [HarmonyPatch(typeof(Game), "OnLoad")]
-        public static void Postfix(){
-            Main.LoadConfig();
-        }
-    }
-    */
-
 }
 //------------template--------------------------------------------------------------------------------------------
 /*
@@ -565,6 +662,61 @@ public class PostExe{
 
 //////trash box//////////////////////////////////////////////////////////////////////////////////////////////////
 ///
+/*
+    [HarmonyPatch]
+    public class TaskPlowModding{   //v0.1.1.0
+        [HarmonyPrefix]
+        [HarmonyPatch(typeof(TaskPlow), "GetHitResult")]
+        public static bool Prefix(HitResult __result, TaskPlow __instance){
+            Point pos = __instance.pos;
+            if(pos.cell.IsTopWater || pos.HasObj){return true;}
+            if(pos.IsFarmField){
+                __result = HitResult.Valid;
+                return false;
+            }
+            return true;
+        }
+
+        [HarmonyPrefix]
+        [HarmonyPatch(typeof(TaskPlow), "CanPerform")]
+        public static bool Prefix(bool __result, TaskPlow __instance){
+            Point pos = __instance.pos;
+            if(pos.IsFarmField){
+                __result = true;
+                return false;
+            }
+            return true;
+        }
+    }
+    */
+/*
+    [HarmonyPatch(typeof(Zone))]
+    [HarmonyPatch(nameof(Zone.Activate))]
+    class ZonePatch {
+        static void Postfix(Zone __instance) {
+            // コンフィグファイルが変更されていたらリロード
+            
+            //if (File.GetLastWriteTime(Config.ConfigFilePath) > Main.LastConfigLoadTime) {
+            //    
+            //    Main.LastConfigLoadTime = DateTime.Now;
+            //    Debug.Log("[VT] Configuration reloaded due to Zone.Activate.");
+            //}
+            
+            Main.LoadConfig();
+            Debug.Log("[VT] Configuration reloaded due to Zone.Activate.");
+        }
+    }
+    */
+    /*
+    [HarmonyPatch]
+    public class PostExe{
+        [HarmonyPostfix]
+        [HarmonyPatch(typeof(Game), "OnLoad")]
+        public static void Postfix(){
+            Main.LoadConfig();
+        }
+    }
+    */
 /*
     [HarmonyPatch(typeof(Zone))]
     [HarmonyPatch(nameof(Zone.Activate))]
