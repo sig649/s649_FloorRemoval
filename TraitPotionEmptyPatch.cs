@@ -19,6 +19,7 @@ namespace s649FR {
             [HarmonyPrefix]
             [HarmonyPatch(typeof(TraitPotionEmpty), "CanUse")]
             internal static bool CanUsePrePatch(Chara c, Point p, ref bool __result){//v0.3.3.0 namefix
+                if(PatchMain.IsOnGlobalMap()){return true;}//v0.4.0.0 add
                 if(!PatchMain.config_F02_00_DrawingWaterByEmptyBottle){return true;}
                 if(p.cell.IsTopWater){
                     __result = p.cell.IsTopWaterAndNoSnow;
@@ -30,6 +31,7 @@ namespace s649FR {
             [HarmonyPrefix]
             [HarmonyPatch(typeof(TraitPotionEmpty), "OnUse")]
             internal static bool OnUsePrePatch(Chara c, Point p,TraitPotionEmpty __instance, ref bool __result){//v0.3.3.0 namefix
+                if(PatchMain.IsOnGlobalMap()){return true;}//v0.4.0.0 add
                 TraitWell well = __instance.GetWell(p);
                 if(well == null){
                     SE.Play("water_farm");

@@ -16,7 +16,8 @@ namespace s649FR
         [HarmonyPatch(typeof(Zone))]//v0.3.4.0
         [HarmonyPatch(nameof(Zone.Activate))]
         internal static class ZoneMain {
-            private static void Postfix(Zone __instance) {   
+            private static void Postfix(Zone __instance) {  
+                if(PatchMain.IsOnGlobalMap()){return;}//v0.4.0.0 add 
                 if(PatchMain.configDebugLogging){
                     //Debug.Log("[FR]CALLED : Zone.Activate " + __instance.ToString());
                     Debug.Log("[FR]Zone : [DLV : " + __instance.DangerLv.ToString() + "]");

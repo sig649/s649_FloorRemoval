@@ -66,6 +66,9 @@ namespace s649FR
                 return false;
             }
             }*/
+            internal static bool IsOnGlobalMap(){
+                return (EClass.pc.currentZone.id == "ntyris") ? true : false;
+            }
             private string TorF(bool b){//v0.3.4.0 ->private
                 return (b)? "T": "F";
             }

@@ -54,6 +54,7 @@ namespace s649FR {
             [HarmonyPrefix]
             [HarmonyPatch(typeof(Map), "MineFloor")]
             internal static bool MineFloorPrefix(Map __instance, Point point, Chara c, bool recoverBlock, bool removePlatform){//v0.3.4.0 ->internal  //v0.3.3.0 namefix
+                if(PatchMain.IsOnGlobalMap()){return true;}//v0.4.0.0 add
                 if(!PatchMain.config_F01_00_a_ModDigOnField || PatchMain.IsFunctionKeyDown){return true;} //#FUNC_01a Flag:falseならvanilla //
                 //if(Main.config_F01_01_Replace2DirtFloor){return true;} //#FUNC_01Another Flag:trueなら何もしない
             
@@ -84,10 +85,11 @@ namespace s649FR {
 
                     num = reroll(num, LUC);//v0.3.3.0
                     
-                    if(num <= 1000 || IsLuckNumber(num)){//v0.4.0.0
+                    if(num < 1000 || IsLuckNumber(num)){//v0.4.0.0
                         if(IsLuckNumber(num) || num < 50){
                             //あなたは財宝を掘り当てた SSR~SR
-                            Msg.Say("ding_skill");
+                            SE.Play("ding_skill");
+                            Msg.Say("digTreasure");
                         } else {
                             Msg.Say("dropReward");// R
                         }
@@ -132,7 +134,7 @@ namespace s649FR {
                         t = ThingGen.Create("medal").SetNum((EClass.rnd(3) + 1));//v0.4.0.0 down
                         break;
                         case >= 25 and < 50: prod = "map_treasure";
-                        t = ThingGen.Create("map_treasure");//v0.4.0.0 moved
+                        t = ThingGen.Create("map_treasure", -1, EClass.pc.LV);//v0.4.0.0 moved edit
                         break;
 
                         //rare(~1000)
@@ -235,7 +237,7 @@ namespace s649FR {
                                 t = ThingGen.Create(GetListRandom(canlist));
                             break;
                             case "bottle" : 
-                                string[] bottlelist = new string[]{"236","519","1170"};
+                                string[] bottlelist = new string[]{"726","727","728"};
                                 t = ThingGen.Create(GetListRandom(bottlelist));
                             break;
                             case "paper" : 
@@ -324,6 +326,7 @@ namespace s649FR {
             [HarmonyPostfix]
             [HarmonyPatch(typeof(Map), "MineFloor")]
             internal static void MineFloorPostfix(Map __instance, Point point, Chara c){//v0.3.4.0 ->internal   //v0.3.3.0 namefix
+                if(PatchMain.IsOnGlobalMap()){return;}//v0.4.0.0 add
                 //if(Main.configDebugLogging){
                 //Debug.Log("[FR]KD[" + ((Main.IsFunctionKeyDown)? "T" : "F") + "]");
                 //Debug.Log("[FR]KD[" + ((Main.IsFunctionKeyDown)? "T" : "F") + "]");
