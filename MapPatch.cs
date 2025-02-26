@@ -163,8 +163,9 @@ namespace s649FR {
                         t = ThingGen.Create("casino_coin").SetNum((int)(Random.Range(1f,10f) * 10));
                         break;
                         case >= 750 and < 1000: prod = "oren";//v0.4.0.0 tweak
-                        seed = EClass.pc.LV * 100;
-                        if(seed < 100){seed = 100;}
+                        seed = (EClass.pc.LV < 0)? 100 : EClass.pc.LV * 100;//v0.4.0.1 mangaichi
+                        //if(seed < 100){seed = 100;}v//v0.4.0.1 huyoura!
+                        if(seed > DLV*100 && DLV > 0){seed = DLV * 100;}//v0.4.0.1 cap add
                         t = ThingGen.CreateCurrency((int)(Random.Range(1f, 10f) * seed));
                         break;
 
