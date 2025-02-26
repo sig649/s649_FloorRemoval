@@ -215,14 +215,28 @@ namespace s649FR {
                                 }
                             }
                             break;
-                            case "scrap" : if(EClass.rnd(2) == 0){
-                                t = ThingGen.Create("scrap", 78);//plastic
-                            } else {
-                                if(EClass.rnd(2) == 0){
+                            case "scrap" : //v0.4.0.2 edit
+                            if(EClass.rnd(10) == 0)
+                            {
+                                if(EClass.rnd(10) != 0)
+                                {
+                                    t = ThingGen.Create("1172", 78);//completely worthless
+                                } else 
+                                {
+                                    t = ThingGen.Create("1172");//completely worthless
+                                }
+                            } else if(EClass.rnd(2) == 0)
+                            {
+                                if(EClass.rnd(2) == 0)
+                                {
                                     t = ThingGen.Create("891");//haizai1
-                                } else {
+                                } else 
+                                {
                                     t = ThingGen.Create("892"); //haizai2
                                 }
+                            } else
+                            {
+                                t = ThingGen.Create("scrap", 78);//plastic
                             }
                             break;
                             case "suteta" :  if(EClass.rnd(2) == 0){

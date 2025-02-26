@@ -19,7 +19,7 @@ namespace s649FR
 {
     namespace Main 
     {
-        [BepInPlugin("s649_FloorRemoval", "s649 Floor Removal", "0.4.0.1")]  
+        [BepInPlugin("s649_FloorRemoval", "s649 Floor Removal", "0.4.0.2")]  
         public class PatchMain : BaseUnityPlugin
         {
             private static ConfigEntry<bool> CE_F01_00_a_ModDigOnField;//#F_01_00_a
