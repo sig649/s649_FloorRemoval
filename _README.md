@@ -25,3 +25,8 @@ Go to the Elin library page on Steam and go to the Setting menu > Browse Local F
 すべての項目はBepInExのコンフィグでON/OFFを変更可能です。
 SteamのElinのライブラリのページの管理メニュー＞ローカルファイルを閲覧
 ＞BepInEx\config\s649_FloorRemoval.cfgをメモ帳などで開き、〇〇 = true or false　となっている場所を置き換えると変更できます
+
+TODO：  
+土地の幸運スキルの適用（いつか）  
+生物が飛び出してくるかも  
+ゲーム内日付を参照した要素
