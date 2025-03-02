@@ -234,7 +234,8 @@ namespace s649FR {
                             {
                                 if(EClass.rnd(10000) != 0)//v0.4.0.3 tweak
                                 {
-                                    t = ThingGen.Create("1172", 14);//completely worthless  /v0.4.0.4 change dou
+                                    t = ThingGen.Create("1172", 14);//completely worthless /v0.4.0.4 change dou
+                                    t.Dye("gold");// /v0.4.1.1 dyed
                                 } else 
                                 {
                                     t = ThingGen.Create("1172");//completely worthless
