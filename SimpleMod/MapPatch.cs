@@ -15,7 +15,439 @@ using s649FR.Main;
 namespace s649FR {
     namespace MapPatch {
         [HarmonyPatch]
-        internal class MapExe{//v0.3.4.0 ->internal
+        internal class MapExe
+        {//v0.3.4.0 ->internal
+            //entry-----------------------------------------------------------------------------
+            private static int TierSSRBorder => PatchMain.cf_Value_T1Border;//SSR メダル・像・大金//border 100
+            private static int TierSRBorder => PatchMain.cf_Value_T2Border;//SR  地図・券・高級ガチャコイン//1000
+            private static int TierRBorder => PatchMain.cf_Value_T3Border;//R   スクラッチ・ぷらちな・金塊・ガチャコイン//10000
+            private static int TierMaterialBorder => PatchMain.cf_Value_T4Border;//UC  素材・ジャンク//100000
+            private static int TierStoneBorder => PatchMain.cf_Value_T5Border;//C   石//250000
+
+            private static List<string> GatyaListSSR => PatchMain.list_Gatya_SSR;
+            private static List<string> GatyaListSR => PatchMain.list_Gatya_SR;
+            private static List<string> GatyaListR => PatchMain.list_Gatya_R;
+            private static List<string> GatyaListMaterial => PatchMain.list_Gatya_M;
+            private static List<string> GatyaListJunk => PatchMain.list_Gatya_J;
+
+
+            //method-list----------------------------------------------------------------------
+            internal static int reroll(int num,int LUC);//ガチャ番号(num)をLUCの値によって再抽選した値をreturnする
+            internal static bool IsLuckNumber(int n);//nがラッキーナンバーであるかどうかを返す
+            internal static string GetListRandom(string[] sList);//sListの中身をランダムに返す
+            //harmony------------------------------------------------------------------------------
+            [HarmonyPrefix]
+            [HarmonyPatch(typeof(Map), "MineFloor")]
+            internal static bool MineFloorPrefix(Map __instance, Point point, Chara c, bool recoverBlock, bool removePlatform){//v0.3.4.0 ->internal  //v0.3.3.0 namefix
+                //除外処理
+                if(PatchMain.IsOnGlobalMap()){return true;}//v0.4.0.0 add
+                if(!PatchMain.config_F01_00_a_ModDigOnField || PatchMain.IsFunctionKeyDown){return true;} //#FUNC_01a Flag:falseならvanilla //
+                
+                //土の床を掘った時
+                if(point.sourceFloor.id == 4){
+                    //Debug.Log("[FR]PointMat" + point.matFloor.id.ToString());
+                    int matF = point.matFloor.id;//床の素材
+                    int num = EClass.rnd(1000000);//v0.4.0.0 edit //ガチャ番号
+                    int onum = num;//元のガチャ番号(for debug)
+                    int LUC = EClass.pc.LUC;//v0.3.3.0
+                    
+                    int seed;//oren計算用
+                    int DLV = PatchMain.currentDLV;//v0.3.4.0
+                    string prod = "-";//ガチャ結果
+                    Thing result = null;//成果
+
+                    num = reroll(num, LUC);//v0.3.3.0
+                    
+                    //ラッキーナンバーのメッセージ処理
+                    if(num < TierRBorder || IsLuckNumber(num)){//v0.4.0.0
+                        if(IsLuckNumber(num) || num < TierSSRBorder){
+                            //あなたは財宝を掘り当てた SSR~SR
+                            SE.Play("ding_skill");
+                            Msg.Say("digTreasure");
+                        } else {
+                            Msg.Say("dropReward");// R
+                        }
+                    
+                    }
+                    //ラッキーナンバーの処理----------------------------------------------------------------
+                    if(IsLuckyNumber(num))
+                    {
+                        prod = "LUCKY";
+                        float DLVinf = (DLV > 0)?(float)Math.Sqrt(DLV):1f;
+                        if(DLVinf < 1f){DLVinf = 1f;} else if(DLVinf > 100f){DLVinf = 100f;}
+                        switch(num)
+                        {
+                            case 7 :
+                                seed = EClass.pc.LV * 1000;
+                                if(seed < 1000){seed = 1000;};
+                                if(DLV > 0){seed = (int)Math.Floor(DLVinf * seed);}
+                                result = ThingGen.CreateCurrency((int)Math.Floor(seed * Random.Range(1f, 2f)));
+                            break;
+                            case 77 :
+                                seed = EClass.pc.LV * 100;
+                                if(seed < 100){seed = 100;};
+                                if(DLV > 0){seed = (int)Math.Floor(seed * DLVinf * DLVinf);}
+                                result = ThingGen.CreateCurrency((int)Math.Floor(seed * Random.Range(1f, 2f)));
+                            break;
+                            case 777 : 
+                                seed = EClass.pc.LV * 10;
+                                if(seed < 10){seed = 10;};
+                                if(DLV > 0){seed = (int)Math.Floor(seed * DLVinf * DLVinf * DLVinf);}
+                                result = ThingGen.CreateCurrency((int)Math.Floor(seed * Random.Range(1f, 2f)));
+                            break;
+                            case 7777 :
+                                seed = EClass.pc.LV;
+                                if(seed < 1){seed = 1;};
+                                if(DLV > 0){seed = (int)Math.Floor(seed * DLVinf * DLVinf * DLVinf * DLVinf);}
+                                if(seed >= 100000000 || seed < 0){seed = 100000000;}//overflow対策
+                                result = ThingGen.CreateCurrency((int)Math.Floor(seed * Random.Range(1f, 2f)));
+                            break;
+                            case 77777 :
+                                //float DLVinf = (DLV > 0)?(float)Math.Sqrt(DLV):1f;
+                                //if(DLVinf < 1f){DLVinf = 1f;} else if(DLVinf > 100f){DLVinf = 100f;}
+                                if(DLV > 0){seed = (int)Math.Floor(seed * DLVinf * DLVinf * DLVinf * DLVinf);}
+                                if(seed >= 100000000 || seed < 0){seed = 100000000;}//overflow対策
+                                result = ThingGen.CreateCurrency((int)Math.Floor(seed * Random.Range(2f, 4f)));
+                            break;
+                            case 777777 :
+                                //float DLVinf = (DLV > 0)?(float)Math.Sqrt(DLV):1f;
+                                //if(DLVinf < 1f){DLVinf = 1f;} else if(DLVinf > 100f){DLVinf = 100f;}
+                                if(DLV > 0){seed = (int)Math.Floor(seed * DLVinf * DLVinf * DLVinf * DLVinf);}
+                                if(seed >= 100000000 || seed < 0){seed = 100000000;}//overflow対策
+                                result = ThingGen.CreateCurrency((int)Math.Floor(seed * Random.Range(4f, 8f)));
+                            break;
+                        }
+                        goto:labelResult;
+                    }
+                    //抽選結果の処理================================================================================
+                    if(num < TierSSRBorder)
+                    {
+                        //RANK : SSR
+                        //      像[STATUE]・メダル[MEDAL]
+                        //内訳
+                        //      STATUE : 828/Luck 659/Healing 758/Element 759/Earth 806/Harvest 1190/Wind 1191/Machine
+                        prod = GetListRandom(GatyaListSSR);
+                        switch(prod)
+                        {
+                            case "STATUE" : 
+                                List<string> statueList = new string[]{"828","659","758","759","806","1190","1191"};
+                                result = (DLV >= 10)? ThingGen.Create(GetListRandom(statueList)) : ThingGen.Create("medal").SetNum(3);
+                            break;
+                            case "MEDAL" : 
+                                result = ThingGen.Create("medal").SetNum(3);
+                            break;
+                            /*
+                            case "OREN" : 
+                                seed = EClass.pc.LV * 1000;
+                                if(seed < 1000){seed = 1000;};
+                                if(IsLuckNumber(num))
+                                {   //ラッキーナンバーならDLVの影響を乗算
+                                    float DLVinf = (DLV > 0)?(float)Math.Sqrt(DLV):1f;
+                                    if(DLVinf < 1f){DLVinf = 1f;} else if(DLVinf > 100f){DLVinf = 100f;}
+                                    if(DLV > 0){seed = (int)Math.Floor(DLVinf * seed);}
+                                }
+                                result = ThingGen.CreateCurrency((int)Math.Floor(seed * Random.Range(1f, 2f)));
+                            break;
+                            */
+                            //case "-" :
+                            //    result = ThingGen.Create("medal").SetNum(1);
+                            //break;
+                            default : result = ThingGen.Create("medal").SetNum(1);
+                        }
+                    } else if(num < TierSRBorder)
+                    {
+                        //RANK : SR 地図・券・高級ガチャコイン
+                        //      地図[TREASUREMAP]・古びた券[TICKET]・高級ガチャコイン[RARECOIN]
+                        //内訳
+                        //      TREASUREMAP:map_treasure TICKET:ticket_fortune GOLD:money2 RARECOIN:gacha_coin_gold
+
+                        prod = GetListRandom(GatyaListSR);
+                        switch(prod)
+                        {
+                            case "TREASUREMAP" : result = ThingGen.Create("map_treasure", -1, EClass.pc.LV);
+                            break;
+                            case "TICKET" : result = ThingGen.Create("ticket_fortune").SetNum(EClass.rnd(2) + 1);
+                            break;
+                            case "RARECOIN" : result = ThingGen.Create("gacha_coin_gold");
+                            break;
+                            //case "GOLD" : 
+                            //break;
+                            /*
+                            case "OREN" : 
+                                seed = EClass.pc.LV * 100;
+                                if(seed < 100){seed = 100;};
+                                if(IsLuckNumber(num))
+                                {   //ラッキーナンバーならDLVの影響を乗算
+                                    float DLVinf = (DLV > 0)?(float)Math.Sqrt(DLV):1f;
+                                    if(DLVinf < 1f){DLVinf = 1f;} else if(DLVinf > 100f){DLVinf = 100f;}
+                                    if(DLV > 0){seed = (int)Math.Floor(seed * DLVinf * DLVinf);}
+                                }
+                                result = ThingGen.CreateCurrency((int)Math.Floor(seed * Random.Range(1f, 2f)));
+                            break;
+                            case "-" :
+                                result = ThingGen.Create("money2").SetNum(EClass.rnd(2) + 1);
+                            break;
+                            */
+                            default : result = ThingGen.Create("money2").SetNum(EClass.rnd(2) + 1);
+                        }
+                    } else if(num < TierRBorder)
+                    {
+                        //RANK : R スクラッチ・ぷらちな・金塊・ガチャコイン
+                        //      スクラッチ[SCRATCH]・プラチナ[plat]・ガチャコイン[COIN]・カジノコイン[CASINO_C]・金塊[GOLD]
+                        //内訳
+                        //      SCRATCH:scratchcard PLATINA:plat COIN:gacha_coin_silver/gacha_coin CASINO_C:casino_coin GOLD:money2
+
+                        prod = GetListRandom(GatyaListR);
+                        switch(prod)
+                        {
+                            case "SCRATCH" : result = ThingGen.Create("scratchcard").SetNum((EClass.rnd(2) + 1));
+                            break;
+                            case "PLATINA" : result = ThingGen.Create("plat").SetNum(EClass.rnd(2) + 1);
+                            break;
+                            case "COIN" : result = (EClass.rnd(4) == 0)? ThingGen.Create("gacha_coin_silver") : ThingGen.Create("gacha_coin").SetNum(EClass.rnd(2) + 1);
+                            break;
+                            case "CASIONO_C" : result = ThingGen.Create("casino_coin").SetNum((int)(Random.Range(1f,10f) * 10));
+                            break;
+                            case "GOLD" : result = ThingGen.Create("money2").SetNum(EClass.rnd(2) + 1);
+                            break;
+                            /*
+                            case "OREN" : 
+                                seed = EClass.pc.LV * 10;
+                                if(seed < 10){seed = 10;};
+                                if(IsLuckNumber(num))
+                                {   //ラッキーナンバーならDLVの影響を乗算
+                                    float DLVinf = (DLV > 0)?(float)Math.Sqrt(DLV):1f;
+                                    if(DLVinf < 1f){DLVinf = 1f;} else if(DLVinf > 100f){DLVinf = 100f;}
+                                    if(DLV > 0){seed = (int)Math.Floor(seed * DLVinf * DLVinf * DLVinf);}
+                                }
+                                result = ThingGen.CreateCurrency((int)Math.Floor(seed * Random.Range(1f, 2f)));
+                            break;
+                            case "-" :
+                                result = ThingGen.Create("money2").SetNum(1);
+                            break;
+                            */
+                            default : result = ThingGen.Create("money2").SetNum(1);
+                        }
+                    } else if(num < TierMaterialBorder)
+                    {
+                        //RANK UC:material
+                        //      ORE,SEED,NEEDLE,SKIN,VINE,BRANCH,FRAGMENT,BONE,SCRAP,WOOD,JUNK
+
+                        prod = GetListRandom(GatyaListMaterial);
+                        switch(prod)
+                        {
+                            case "ORE" : result = ThingGen.Create("ore", 78);//plastic ore
+                            break;
+                            case "SEED" : result = ThingGen.Create("seed");
+                            break;
+                            case "NEEDLE" : result = ThingGen.Create("needle");
+                            break;
+                            case "SKIN" : result = ThingGen.Create("skin");
+                            break;
+                            case "BRANCH" : result = ThingGen.Create("branch");
+                            break;
+                            case "BONE" : result = (EClas.rnd(4) == 0)? ThingGen.Create("bone") : ThingGen.Create("fang");
+                            break;
+                            case "SCRAP" : result = ThingGen.Create("scrap", 78);
+                            break;
+                            case "WOOD" : result = ThingGen.Create("log");
+                            break;
+                            case "FRAGMENT" : result = ThingGen.Create("fragment");
+                            break;
+                            case "JUNK" : 
+                                //string[] JUNKList = new string[]{"PAPER","GRAVE","CAN","BOTTLE","WOOD","RUBBER","SCRAP","GARBAGE"};
+                                switch(GetListRandom(JUNKList))
+                                {
+                                    case "PAPER" : 
+                                    string[] paperlist = new string[]{"191","193","196","197","219","220","221","216","217","218","206","207","729","730"};
+                                    result = ThingGen.Create(GetListRandom(paperlist));
+                                    break;
+                                    case "GRAVE" : 
+                                    if(EClass.rnd(10) == 0)
+                                    {//gold
+                                        switch(EClass.rnd(3))
+                                        {
+                                            case 0 :result = ThingGen.Create("944");
+                                            break;
+                                            case 1 :result = ThingGen.Create("945");
+                                            break;
+                                            default :result = ThingGen.Create("946");
+                                            break;
+                                        }
+                                    } else 
+                                    {
+                                        string[] gravelist = new string[]{"930","950","951","952","931","947","948","949"};//grave : 930,950,951,952,931,947,948,949,944,945,946
+                                        result = ThingGen.Create(GetListRandom(gravelist));
+                                    } 
+                                    break;
+                                    case "CAN" : 
+                                    string[] canlist = new string[]{"236","529","1170"};
+                                    result = ThingGen.Create(GetListRandom(canlist));
+                                    break;
+                                    case "BOTTLE" :
+                                    string[] bottlelist = new string[]{"726","727","728"};
+                                    result = ThingGen.Create(GetListRandom(bottlelist));
+                                    break;
+                                    case "WOOD" : 
+                                    //wood r : 182,183
+                                    result = (EClass.rnd(2) == 0)? ThingGen.Create("182") : ThingGen.Create("183");
+                                    break;
+                                    case "RUBBER" :
+                                    if(EClass.rnd(10) == 0)
+                                    {
+                                        t = ThingGen.Create("1180");//cat
+                                    } else {
+                                        if(EClass.rnd(2) == 0){
+                                            t = ThingGen.Create("1178");
+                                        } else {
+                                            t = ThingGen.Create("1179");
+                                        }
+                                    }
+                                    break;
+                                    case "SCRAP" : 
+                                    if(EClass.rnd(10) == 0)
+                                    {
+                                        if(EClass.rnd(10000) != 0)//v0.4.0.3 tweak
+                                        {
+                                            result = ThingGen.Create("1172", 14);//completely worthless
+                                            result.Dye("gold");// /v0.4.1.1 dyed
+                                        } else 
+                                        {
+                                            result = ThingGen.Create("1172");//gold!
+                                        }
+                                    } else if(EClass.rnd(2) == 0)
+                                    {
+                                        if(EClass.rnd(2) == 0)
+                                        {
+                                            result = ThingGen.Create("891");//haizai1
+                                        } else 
+                                        {
+                                            result = ThingGen.Create("892"); //haizai2
+                                        }
+                                    } else
+                                    {
+                                        result = ThingGen.Create("scrap", 78);//plastic
+                                    }
+                                    break;
+                                    case "GARBAGE" :
+                                    string[] garbagelist = new string[]{"209","210","scrubber","tissue","trash1","trash2","rope"};
+                                    result = ThingGen.Create(GetListRandom(garbagelist));
+                                    break;
+                                    /*
+                                    case "OREN" : 
+                                    seed = EClass.pc.LV;
+                                    if(seed < 1){seed = 1;};
+                                    if(IsLuckNumber(num))
+                                    {   //ラッキーナンバーならDLVの影響を乗算
+                                        float DLVinf = (DLV > 0)?(float)Math.Sqrt(DLV):1f;
+                                        if(DLVinf < 1f){DLVinf = 1f;} else if(DLVinf > 100f){DLVinf = 100f;}
+                                        if(DLV > 0){seed = (int)Math.Floor(seed * DLVinf * DLVinf * DLVinf * DLVinf);}
+                                    }
+                                    if(seed >= 100000000 || seed < 0){seed = 100000000;}//overflow対策
+                                    result = ThingGen.CreateCurrency((int)Math.Floor(seed * Random.Range(1f, 2f)));
+                                    break;
+                                    */
+                                    default :result = ThingGen.Create("scrap", 78);//plastic
+
+                                }
+                            break;
+                            default : result = ThingGen.Create("bone");
+                        }
+                    } else if(num < TierStoneBorder)
+                    {
+                        prod = "STONE";
+                        /*
+                        if(IsLuckNumber(num))
+                        {
+                            float DLVinf = (DLV > 0)?(float)Math.Sqrt(DLV):1f;
+                            if(DLVinf < 1f){DLVinf = 1f;} else if(DLVinf > 100f){DLVinf = 100f;}
+                            if(DLV > 0){seed = (int)Math.Floor(seed * DLVinf * DLVinf * DLVinf * DLVinf);}
+                            if(seed >= 100000000 || seed < 0){seed = 100000000;}//overflow対策
+                            result = ThingGen.CreateCurrency((int)Math.Floor(seed * Random.Range(2f, 4f)));
+                        }
+                        else 
+                        {
+                        */
+                            switch(EClass.rnd(10))
+                            {
+                                case 0 : result = ThingGen.Create("rock");
+                                break;
+                                case >= 1 and < 5: result = ThingGen.Create("pebble").SetNum(EClass.rnd(2) + 1);
+                                break;
+                                default : result = ThingGen.Create("stone").SetNum(EClass.rnd(5) + 1);
+                            }
+                        //}
+                        
+                    } else //dirt
+                    {
+                        prod = "DIRT";/*
+                        if(IsLuckNumber(num))
+                        {
+                            float DLVinf = (DLV > 0)?(float)Math.Sqrt(DLV):1f;
+                            if(DLVinf < 1f){DLVinf = 1f;} else if(DLVinf > 100f){DLVinf = 100f;}
+                            if(DLV > 0){seed = (int)Math.Floor(seed * DLVinf * DLVinf * DLVinf * DLVinf);}
+                            if(seed >= 100000000 || seed < 0){seed = 100000000;}//overflow対策
+                            result = ThingGen.CreateCurrency((int)Math.Floor(seed * Random.Range(4f, 8f)));
+                        }
+                        else 
+                        {*/
+                            result = ThingGen.Create("chunk",matF);
+                        //}
+                    }
+                    //ここまでガチャ処理+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                    labelResult:
+
+                    //resultをpcに拾わせる処理
+                    if(result != null){
+                        //c.Pick(t);
+                        __instance.TrySmoothPick(point, result, c);
+                    }
+                    //debug
+                    if(PatchMain.configDebugLogging){
+                        string text = "[FR]Gatya ";
+                        text += "[num:" + num.ToString() + "]";
+                        text += "[onum:" + onum.ToString() + "]";
+                        text += "[LUC:" + LUC.ToString() + "]";
+                        text += "[LV:" + EClass.pc.LV.ToString() + "]";
+                        text += "[DLV:" + DLV.ToString() + "]";
+                        text += "[prod:" + prod + "]";
+                        
+                        Debug.Log(text);
+                    }
+                    return false;
+                }
+                
+                return true;
+            }
+
+            [HarmonyPostfix]
+            [HarmonyPatch(typeof(Map), "MineFloor")]
+            internal static void MineFloorPostfix(Map __instance, Point point, Chara c){//v0.3.4.0 ->internal   //v0.3.3.0 namefix
+                if(PatchMain.IsOnGlobalMap()){return;}//v0.4.0.0 add
+                
+                //土の床に置き換える処理
+                if(PatchMain.config_F01_01_Replace2DirtFloor && ContainsChunk(point)){//edit //v0.3.1.1
+                    if(point.sourceFloor.id == 4){
+                        if(!PatchMain.config_F01_00_a_ModDigOnField || PatchMain.IsFunctionKeyDown){
+                            point.SetFloor(45, 40);
+                        }
+                    } else {
+                        point.SetFloor(45, 40);
+                    }
+                }
+                
+            }
+
+            //methods
+            internal static string GetListRandom(string[] sList){//v0.4.0.0
+                if(sList == null){return "";} 
+                else 
+                {
+                    int max = 20;
+                    return sList[Random.Range(0,(sList.Length > 20)? max : sList.Length;)];
+                }
+            }
+
             internal static int reroll(int num,int LUC){//v0.3.3.0 add
                 int amari;
                 while(LUC > 0){
@@ -40,65 +472,38 @@ namespace s649FR {
             }
             internal static bool IsLuckNumber(int n){//v0.4.0.0 edit
                 switch(n){
-                    case <= 50 : return true;
-                    case 77 or 777 or 7777 or 77777 or 777777: return true;
+                    //case <= 50 : return true;
+                    case 7 or 77 or 777 or 7777 or 77777 or 777777: return true;
                 }
                 return false;
             }
-            internal static string GetListRandom(string[] sList){//v0.4.0.0
-                if(sList == null){return "";} else {
-                    return sList[Random.Range(0,sList.Length)];
+            private static bool ContainsChunk(Point point){
+                if(point.sourceFloor.components[0].Contains("chunk@soil") || point.sourceFloor.components[0].Contains("chunk@snow") || point.sourceFloor.components[0].Contains("chunk@ice")){
+                //if(Main.FlagModDiggingOnField(point)){
+                //   return false; 
+                //}
+                    return true;
+                } else {
+                    return false;
                 }
-            }
+            }    
+        }   
+    }
+}
 
-            [HarmonyPrefix]
-            [HarmonyPatch(typeof(Map), "MineFloor")]
-            internal static bool MineFloorPrefix(Map __instance, Point point, Chara c, bool recoverBlock, bool removePlatform){//v0.3.4.0 ->internal  //v0.3.3.0 namefix
-                if(PatchMain.IsOnGlobalMap()){return true;}//v0.4.0.0 add
-                if(!PatchMain.config_F01_00_a_ModDigOnField || PatchMain.IsFunctionKeyDown){return true;} //#FUNC_01a Flag:falseならvanilla //
-                //if(Main.config_F01_01_Replace2DirtFloor){return true;} //#FUNC_01Another Flag:trueなら何もしない
-            
-                //----debug------------------------------------------------------------------------
-                /*
-                string text = "[LS]MF [";
-                text += "Map:" + __instance.ToString() + "][";
-                text += "P:" + point.ToString() + "][";
-                text += "C:" + c.ToString() + "][";
-                text += "rB:" + recoverBlock.ToString() + "][";
-                text += "rP:" + removePlatform.ToString() + "][";
-                text += "]";
-                */
-                //---debug kokomade--------------------------------------------------------------------
-                //if(Main.configFlagModInfiniteDigOnFieldToNothing){return false;} //#FUNC_01b　Flag:trueなら掘りつつアイテム入手をスキップ
-                if(point.sourceFloor.id == 4){
-                    //Debug.Log("[FR]PointMat" + point.matFloor.id.ToString());
-                    int matF = point.matFloor.id;
-                    int num = EClass.rnd(1000000);//v0.4.0.0 edit
-                    int onum = num;
-                    int LUC = EClass.pc.LUC;//v0.3.3.0
-                    //int[] numbers = new listlize(num);
-                    //int bingo = exeBingo(numbers);
-                    int seed;
-                    int DLV = PatchMain.currentDLV;//v0.3.4.0
-                    string prod = "-";
-                    Thing t = null;
 
-                    num = reroll(num, LUC);//v0.3.3.0
-                    
-                    if(num < 1000 || IsLuckNumber(num)){//v0.4.0.0
-                        if(IsLuckNumber(num) || num < 50){
-                            //あなたは財宝を掘り当てた SSR~SR
-                            SE.Play("ding_skill");
-                            Msg.Say("digTreasure");
-                        } else {
-                            Msg.Say("dropReward");// R
-                        }
-                    
-                    }
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
+///trash box
+
+
+/*
+                if(Main.config_F01_01_Replace2DirtFloor && ContainsChunk(point) && point.sourceFloor.id == 4){
+                if(!Main.config_F01_00_a_ModDigOnField || Main.IsFunctionKeyDown){
+                    point.SetFloor(45, 40);
+                }
+                } 
                 
-                    switch(num){//v0.4.0.0 edit
-                        //SS rare(~7 or luckynumber)
-                        case 0 : prod = "828";
+                case 0 : prod = "828";
                         t = (DLV >= 10)? ThingGen.Create(prod) : ThingGen.Create("medal").SetNum(5);//うみみゃあkouun
                         break;
                         case 1 : prod = "659";
@@ -128,8 +533,8 @@ namespace s649FR {
                         if(DLV > 0){seed = (int)Math.Floor(DLVinf * seed);}//v0.4.1.0 tweak
                         t = ThingGen.CreateCurrency((int)Math.Floor(seed * Random.Range(1f, 2f)));//v0.4.1.0 tweak
                         break;
-
-                        //S rare(~50)
+                
+                 //S rare(~50)
                         case >= 8 and < 25: prod = "medal";
                         t = ThingGen.Create("medal").SetNum((EClass.rnd(3) + 1));//v0.4.0.0 down
                         break;
@@ -168,6 +573,12 @@ namespace s649FR {
                         if(seed > DLV*100 && DLV > 0){seed = DLV * 100;}//v0.4.0.1 cap add
                         t = ThingGen.CreateCurrency((int)Math.Floor(Random.Range(1f, 10f) * seed));//v0.4.1.0 edit
                         break;
+                
+                switch(num){//v0.4.0.0 edit
+                        //SS rare(~7 or luckynumber)
+                        
+
+                       
                         //R-
                         case >= 1000 and < 10000 : //v0.4.1.0 ore
                             prod = "ore";
@@ -202,6 +613,7 @@ namespace s649FR {
                         fossil : 1053 -> bone
                         haizai : 891,892 -> scrap
                         */
+                        /*
                         string[] uclist = new string[]{"bone","scrap","suteta","can","bottle","paper","grave","wood","rubber","rope"};
                         //prod = uclist[Random.Range(0, uclist.Length)];
                         prod = GetListRandom(uclist);
@@ -227,6 +639,7 @@ namespace s649FR {
                                     t = ThingGen.Create("738");//deadfish
                                 }
                                 */
+                                /*
                             }
                             break;
                             case "scrap" : //v0.4.0.2 edit
@@ -275,8 +688,10 @@ namespace s649FR {
                                 t = ThingGen.Create(GetListRandom(paperlist));
                             break;
                             case "grave" : 
-                            if(EClass.rnd(10) == 0){//gold
-                                switch(EClass.rnd(3)){
+                            if(EClass.rnd(10) == 0)
+                            {//gold
+                                switch(EClass.rnd(3))
+                                {
                                     case 0 :t = ThingGen.Create("944");
                                     break;
                                     case 1 :t = ThingGen.Create("945");
@@ -284,7 +699,8 @@ namespace s649FR {
                                     default :t = ThingGen.Create("946");
                                     break;
                                 }
-                            } else {
+                            } else 
+                            {
                                 string[] gravelist = new string[]{"930","950","951","952","931","947","948","949"};//grave : 930,950,951,952,931,947,948,949,944,945,946
                                 t = ThingGen.Create(GetListRandom(gravelist));
                             } 
@@ -332,71 +748,9 @@ namespace s649FR {
                         default  : t = ThingGen.Create("chunk",matF);//respectfloormaterial
                         break;
                     }
-                    if(t != null){
-                        //c.Pick(t);
-                        __instance.TrySmoothPick(point, t, c);
-                    }
-                    if(PatchMain.configDebugLogging){
-                        string text = "[FR]Gatya ";
-                        text += "[num:" + num.ToString() + "]";
-                        text += "[onum:" + onum.ToString() + "]";
-                        text += "[LUC:" + LUC.ToString() + "]";
-                        text += "[LV:" + EClass.pc.LV.ToString() + "]";
-                        text += "[DLV:" + DLV.ToString() + "]";
-                        text += "[prod:" + prod + "]";
-                        
-                        Debug.Log(text);
-                    }
-                    return false;
-                }
                 
-                return true;
-            }
-
-            [HarmonyPostfix]
-            [HarmonyPatch(typeof(Map), "MineFloor")]
-            internal static void MineFloorPostfix(Map __instance, Point point, Chara c){//v0.3.4.0 ->internal   //v0.3.3.0 namefix
-                if(PatchMain.IsOnGlobalMap()){return;}//v0.4.0.0 add
-                //if(Main.configDebugLogging){
-                //Debug.Log("[FR]KD[" + ((Main.IsFunctionKeyDown)? "T" : "F") + "]");
-                //Debug.Log("[FR]KD[" + ((Main.IsFunctionKeyDown)? "T" : "F") + "]");
-                //}
-                if(PatchMain.config_F01_01_Replace2DirtFloor && ContainsChunk(point)){//edit //v0.3.1.1
-                    if(point.sourceFloor.id == 4){
-                        if(!PatchMain.config_F01_00_a_ModDigOnField || PatchMain.IsFunctionKeyDown){
-                            point.SetFloor(45, 40);
-                        }
-                    } else {
-                        point.SetFloor(45, 40);
-                    }
-                }
                 
-            }
-            private static bool ContainsChunk(Point point){
-                if(point.sourceFloor.components[0].Contains("chunk@soil") || point.sourceFloor.components[0].Contains("chunk@snow") || point.sourceFloor.components[0].Contains("chunk@ice")){
-                //if(Main.FlagModDiggingOnField(point)){
-                //   return false; 
-                //}
-                    return true;
-                } else {
-                    return false;
-                }
-            }    
-        }   
-    }
-}
-
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////
-///trash box
-
-
-/*
-                if(Main.config_F01_01_Replace2DirtFloor && ContainsChunk(point) && point.sourceFloor.id == 4){
-                if(!Main.config_F01_00_a_ModDigOnField || Main.IsFunctionKeyDown){
-                    point.SetFloor(45, 40);
-                }
-                } */  
+                */  
 
 
 
@@ -519,3 +873,18 @@ namespace s649FR {
                         case >= 20000 and < 25000: t = ThingGen.Create("ore",78);//plastic ore
                         break;
                         */
+
+                        //if(Main.config_F01_01_Replace2DirtFloor){return true;} //#FUNC_01Another Flag:trueなら何もしない
+            
+                //----debug------------------------------------------------------------------------
+                /*
+                string text = "[LS]MF [";
+                text += "Map:" + __instance.ToString() + "][";
+                text += "P:" + point.ToString() + "][";
+                text += "C:" + c.ToString() + "][";
+                text += "rB:" + recoverBlock.ToString() + "][";
+                text += "rP:" + removePlatform.ToString() + "][";
+                text += "]";
+                */
+                //---debug kokomade--------------------------------------------------------------------
+                //if(Main.configFlagModInfiniteDigOnFieldToNothing){return false;} //#FUNC_01b　Flag:trueなら掘りつつアイテム入手をスキップ

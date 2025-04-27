@@ -19,19 +19,20 @@ namespace s649FR
 {
     namespace Main 
     {
-        [BepInPlugin("s649_FloorRemoval", "s649 Floor Removal", "0.4.1.0")]  
+        [BepInPlugin("s649_FloorRemoval", "s649 Floor Removal", "0.5.0.0")]  
         public class PatchMain : BaseUnityPlugin
         {
+            //ConfigEntry + prop------------------------------------------------------------------------------
+            //general
             private static ConfigEntry<bool> CE_F01_00_a_ModDigOnField;//#F_01_00_a
             //private static ConfigEntry<bool> flagModInfiniteDigOnFieldToNothing;//#F01_00_b
             private static ConfigEntry<bool> CE_F01_01_Replace2DirtFloor;//#F01_01
             private static ConfigEntry<bool> CE_F02_00_DrawingWaterByEmptyBottle;//#F02_00  
             private static ConfigEntry<bool> CE_F02_01_ReplaceWaterFloor;//#F02_01
             private static ConfigEntry<bool> CE_F02_01_a_ToggleReplaceWaterFloorFunction;//#F02_01_a //v0.3.1.0
-
             private static ConfigEntry<KeyCode> CE_KeyCode;//v0.3.0.0
             private static ConfigEntry<bool> CE_DebugLogging;//#F02_01
-        
+            //................................................................................
             public static bool config_F01_00_a_ModDigOnField => CE_F01_00_a_ModDigOnField.Value;//#F01_00_a
             //public static bool configFlagModInfiniteDigOnFieldToNothing => flagModInfiniteDigOnFieldToNothing.Value;//#F01_00_b
             public static bool config_F01_01_Replace2DirtFloor => CE_F01_01_Replace2DirtFloor.Value;//#F01_01
@@ -39,33 +40,84 @@ namespace s649FR
             public static bool config_F02_01_ReplaceWaterFloor => CE_F02_01_ReplaceWaterFloor.Value;//#F2_01
             public static bool config_F02_01_a_ToggleReplaceWaterFloorFunction => CE_F02_01_a_ToggleReplaceWaterFloorFunction.Value;//#F2_01_a //v0.3.1.0
 
-            public static bool IsFunctionKeyDown = false;//v0.3.0.0
             public static bool configDebugLogging => CE_DebugLogging.Value;
+            
 
+
+            
+            //--gatya----------------------------------------------------------------------------------------
+            private static ConfigEntry<string> CE_GatyaListSSR;
+            private static ConfigEntry<string> CE_GatyaListSR;
+            private static ConfigEntry<string> CE_GatyaListR;
+            private static ConfigEntry<string> CE_GatyaListMaterial;
+            private static ConfigEntry<string> CE_GatyaListJunk;
+            
+            private static ConfigEntry<int> CE_Value_T1Border;
+            private static ConfigEntry<int> CE_Value_T2Border;
+            private static ConfigEntry<int> CE_Value_T3Border;
+            private static ConfigEntry<int> CE_Value_T4Border;
+            private static ConfigEntry<int> CE_Value_T5Border;
+            
+            
+            //....................................................................................
+            
+            public static List<string> list_Gatya_SSR => CE_GatyaListSSR.Value.Split(',').Select(s => s.Trim()).ToList();
+            public static List<string> list_Gatya_SR => CE_GatyaListSR.Value.Split(',').Select(s => s.Trim()).ToList();
+            public static List<string> list_Gatya_R => CE_GatyaListR.Value.Split(',').Select(s => s.Trim()).ToList();
+            public static List<string> list_Gatya_M => CE_GatyaListMaterial.Value.Split(',').Select(s => s.Trim()).ToList();
+            public static List<string> list_Gatya_J => CE_GatyaListJunk.Value.Split(',').Select(s => s.Trim()).ToList();
+            
+            public static int cf_Value_T1Border {
+		        get {return Mathf.Clamp(CE_Value_T1Border.Value,0,100);}
+	        }
+            public static int cf_Value_T2Border {
+		        get {return Mathf.Clamp(CE_Value_T2Border.Value,100,1000);}
+	        }
+            public static int cf_Value_T3Border {
+		        get {return Mathf.Clamp(CE_Value_T3Border.Value,1000,10000);}
+	        }
+            public static int cf_Value_T4Border {
+		        get {return Mathf.Clamp(CE_Value_T3Border.Value,1000,100000);}
+	        }
+            public static int cf_Value_T5Border {
+		        get {return Mathf.Clamp(CE_Value_T3Border.Value,100000,1000000);}
+	        }
+            //class  prop----------------------------------------------------------
             internal static int currentDLV = 0;//v0.3.4.0 
+            internal static bool IsFunctionKeyDown = false;//v0.3.0.0
+
+            
+            //loading---------------------------------------------------------------------------------------------------
             private void LoadConfig()
             {
                 CE_F02_00_DrawingWaterByEmptyBottle = Config.Bind("#FUNC_02_00", "DRAWING_WATER_BY_EMPTY_BOTTLE", true, "If true, you can drawing water from floor of water by empty bottle");
 
                 CE_F02_01_ReplaceWaterFloor = Config.Bind("#FUNC_02_01", "REPLACE_WATER_FLOOR", true, "If Press left shift ley, drawing water changes water floor");
-                CE_F02_01_a_ToggleReplaceWaterFloorFunction = Config.Bind("#FUNC_02_01_a", "Toggle_REPLACE_WATER_FLOOR", false, "If true, toggle replacing function by function key");//v0.3.1.0
+                //CE_F02_01_a_ToggleReplaceWaterFloorFunction = Config.Bind("#FUNC_02_01_a", "Toggle_REPLACE_WATER_FLOOR", false, "If true, toggle replacing function by function key");//v0.3.1.0
 
                 CE_F01_00_a_ModDigOnField = Config.Bind("#FUNC_01_00_a", "MOD_DIG_ON_FIELD", true, "Change the deliverables when you perform a dig in the field");
                 //flagModInfiniteDigOnFieldToNothing = Config.Bind("#FUNC_01_00_b", "CHANGE_TO_DIGGING_NOTHING_ON_FIELD", false, "Nothing will be dug out of the field(Not Recommend)");
                 CE_F01_01_Replace2DirtFloor = Config.Bind("#FUNC_01_01", "REPLACE_FLOOR_AFTER_DIGGING_CHUNK", true, "Replace some floors with dirt floors after digging");
+
+                CE_GatyaListSSR = Config.Bind("#List-Gatya","LIST_SSR_GATYA","STATUE,MEDAL,MEDAL,MEDAL,MEDAL","List of items produced by SSR Tier");
+                CE_GatyaListSR = Config.Bind("#List-Gatya","LIST_SR_GATYA","TREASUREMAP,TICKET,TICKET,RARECOIN,RARECOIN","List of items produced by SR Tier");
+                CE_GatyaListR = Config.Bind("#List-Gatya","LIST_R_GATYA","SCRATCH,PLATINA,COIN,CASINO_C,GOLD","List of items produced by R Tier");
+                CE_GatyaListMaterial = Config.Bind("#List-Gatya","LIST_Material_GATYA","ORE,SEED,NEEDLE,SKIN,BRANCH,BONE,SCRAP,WOOD,FRAGMENT,JUNK","List of items produced by Material Tier");
+                CE_GatyaListJunk = Config.Bind("#List-Gatya","LIST_Junk_GATYA","PAPER,GRAVE,CAN,BOTTLE,WOOD,RUBBER,SCRAP,GARBAGE","List of Junk items produced by Material Tier in Junk List");
+                
+                CE_Value_T1Border = Config.Bind("Value-Gatya","Value_T1_Border",100,"Value of T1 (SSR) border");
+                CE_Value_T2Border = Config.Bind("Value-Gatya","Value_T2_Border",1000,"Value of T1 (SR) border");
+                CE_Value_T3Border = Config.Bind("Value-Gatya","Value_T3_Border",10000,"Value of T1 (R) border");
+                CE_Value_T4Border = Config.Bind("Value-Gatya","Value_T4_Border",100000,"Value of T1 (Material) border");
+                CE_Value_T5Border = Config.Bind("Value-Gatya","Value_T5_Border",250000,"Value of T1 (Stone) border");
+
+
                 CE_KeyCode = Config.Bind<KeyCode>("#KeyBind", "Function_Key", KeyCode.LeftShift, "Function_key");//v0.3.0.0
                 CE_DebugLogging = Config.Bind("#z_Debug", "DEBUG_LOGGING", false, "For Debug");
             }
             //////////////////////////////////////////////////////////////////////
         
-            /*
-            public static bool FlagModDiggingOnField(Point point){
-            if(config_F01_00_a_ModDigOnField){
-                return true;
-            } else {
-                return false;
-            }
-            }*/
+            
             internal static bool IsOnGlobalMap(){
                 return (EClass.pc.currentZone.id == "ntyris") ? true : false;
             }
@@ -76,7 +128,7 @@ namespace s649FR
             {
                 LoadConfig();
                 if(configDebugLogging){
-                    string text = "[FR]Config";
+                    string text = "[s649-FR]Config";
                     text += ("[01_00_a/" + TorF(config_F01_00_a_ModDigOnField) + "]");
                     text += ("[01_01/" + TorF(config_F01_01_Replace2DirtFloor) + "]");
                     text += ("[02_00/" + TorF(config_F02_00_DrawingWaterByEmptyBottle) + "]");
@@ -465,3 +517,12 @@ class ZonePatch {
             Debug.Log("[VT]Configuration reloaded.");
         }
         */
+
+        /*
+            public static bool FlagModDiggingOnField(Point point){
+            if(config_F01_00_a_ModDigOnField){
+                return true;
+            } else {
+                return false;
+            }
+            }*/
