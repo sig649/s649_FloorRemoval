@@ -423,10 +423,17 @@ namespace s649FR {
             [HarmonyPostfix]
             [HarmonyPatch(typeof(Map), "MineFloor")]
             internal static void MineFloorPostfix(Map __instance, Point point, Chara c){//v0.3.4.0 ->internal   //v0.3.3.0 namefix
-                if(PatchMain.IsOnGlobalMap()){return;}//v0.4.0.0 add
+                //除外処理
+                if(PatchMain.IsOnGlobalMap()){return;}// globalmapにいる
+                if(!PatchMain.config_F01_01_Replace2DirtFloor){return;}//01_01 が false
                 
-                //土の床に置き換える処理
-                if(PatchMain.config_F01_01_Replace2DirtFloor && ContainsChunk(point)){//edit //v0.3.1.1
+                //機能キーを押している時に畑を土の床に置き換える処理
+                if(ContainsChunk(point) && point.sourceFloor.id == 4){//床が畑かどうか
+                    if(PatchMain.IsFunctionKeyDown){
+                        point.SetFloor(45, 40);
+                    }
+                }
+                /*
                     if(point.sourceFloor.id == 4){
                         if(!PatchMain.config_F01_00_a_ModDigOnField || PatchMain.IsFunctionKeyDown){
                             point.SetFloor(45, 40);
@@ -434,8 +441,7 @@ namespace s649FR {
                     } else {
                         point.SetFloor(45, 40);
                     }
-                }
-                
+                */
             }
 
             //methods

@@ -29,7 +29,7 @@ namespace s649FR
             private static ConfigEntry<bool> CE_F01_01_Replace2DirtFloor;//#F01_01
             private static ConfigEntry<bool> CE_F02_00_DrawingWaterByEmptyBottle;//#F02_00  
             private static ConfigEntry<bool> CE_F02_01_ReplaceWaterFloor;//#F02_01
-            private static ConfigEntry<bool> CE_F02_01_a_ToggleReplaceWaterFloorFunction;//#F02_01_a //v0.3.1.0
+            //private static ConfigEntry<bool> CE_F02_01_a_ToggleReplaceWaterFloorFunction;//#F02_01_a //v0.3.1.0
             private static ConfigEntry<KeyCode> CE_KeyCode;//v0.3.0.0
             private static ConfigEntry<bool> CE_DebugLogging;//#F02_01
             //................................................................................
@@ -38,7 +38,7 @@ namespace s649FR
             public static bool config_F01_01_Replace2DirtFloor => CE_F01_01_Replace2DirtFloor.Value;//#F01_01
             public static bool config_F02_00_DrawingWaterByEmptyBottle => CE_F02_00_DrawingWaterByEmptyBottle.Value;//#F02_00
             public static bool config_F02_01_ReplaceWaterFloor => CE_F02_01_ReplaceWaterFloor.Value;//#F2_01
-            public static bool config_F02_01_a_ToggleReplaceWaterFloorFunction => CE_F02_01_a_ToggleReplaceWaterFloorFunction.Value;//#F2_01_a //v0.3.1.0
+            //public static bool config_F02_01_a_ToggleReplaceWaterFloorFunction => CE_F02_01_a_ToggleReplaceWaterFloorFunction.Value;//#F2_01_a //v0.3.1.0
 
             public static bool configDebugLogging => CE_DebugLogging.Value;
             
