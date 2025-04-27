@@ -1,8 +1,8 @@
-//using System;
-///using System.Collections.Generic;
-//using System.Linq;
-//using System.Text;
-//using System.Threading.Tasks;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
 using BepInEx;
 using HarmonyLib;
@@ -10,9 +10,8 @@ using HarmonyLib;
 using UnityEngine;
 using BepInEx.Configuration;
 using System.IO;
-//using System.Diagnostics;
+using System.Diagnostics;
 using Debug = UnityEngine.Debug;
-using Random = UnityEngine.Random;//v0.3.3.0 grep
 using s649FR;
 
 namespace s649FR

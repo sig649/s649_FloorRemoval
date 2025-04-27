@@ -1,15 +1,21 @@
 using System;
-using System.IO;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
 using BepInEx;
 using HarmonyLib;
 
 using UnityEngine;
 using BepInEx.Configuration;
-
-//using System.Diagnostics;
+using System.IO;
+using System.Diagnostics;
 using Debug = UnityEngine.Debug;
+
 using Random = UnityEngine.Random;//v0.3.3.0 grep
 using s649FR.Main;
+using static UnityEditor.Experimental.AssetDatabaseExperimental.AssetDatabaseCounters;
 //using Main = s649FR.Main;
 
 namespace s649FR {
@@ -32,9 +38,9 @@ namespace s649FR {
 
 
             //method-list----------------------------------------------------------------------
-            internal static int reroll(int num,int LUC);//ガチャ番号(num)をLUCの値によって再抽選した値をreturnする
-            internal static bool IsLuckNumber(int n);//nがラッキーナンバーであるかどうかを返す
-            internal static string GetListRandom(string[] sList);//sListの中身をランダムに返す
+            //internal static int reroll(int num,int LUC);//ガチャ番号(num)をLUCの値によって再抽選した値をreturnする
+            //internal static bool IsLuckyNumber(int n);//nがラッキーナンバーであるかどうかを返す
+            //internal static string GetListRandom(string[] sList);//sListの中身をランダムに返す
             //harmony------------------------------------------------------------------------------
             [HarmonyPrefix]
             [HarmonyPatch(typeof(Map), "MineFloor")]
@@ -59,8 +65,8 @@ namespace s649FR {
                     num = reroll(num, LUC);//v0.3.3.0
                     
                     //ラッキーナンバーのメッセージ処理
-                    if(num < TierRBorder || IsLuckNumber(num)){//v0.4.0.0
-                        if(IsLuckNumber(num) || num < TierSSRBorder){
+                    if(num < TierRBorder || IsLuckyNumber(num)){//v0.4.0.0
+                        if(IsLuckyNumber(num) || num < TierSSRBorder){
                             //あなたは財宝を掘り当てた SSR~SR
                             SE.Play("ding_skill");
                             Msg.Say("digTreasure");
@@ -103,21 +109,23 @@ namespace s649FR {
                                 result = ThingGen.CreateCurrency((int)Math.Floor(seed * Random.Range(1f, 2f)));
                             break;
                             case 77777 :
+                                seed = EClass.pc.LV;
                                 //float DLVinf = (DLV > 0)?(float)Math.Sqrt(DLV):1f;
                                 //if(DLVinf < 1f){DLVinf = 1f;} else if(DLVinf > 100f){DLVinf = 100f;}
-                                if(DLV > 0){seed = (int)Math.Floor(seed * DLVinf * DLVinf * DLVinf * DLVinf);}
+                                if (DLV > 0){seed = (int)Math.Floor(seed * DLVinf * DLVinf * DLVinf * DLVinf);}
                                 if(seed >= 100000000 || seed < 0){seed = 100000000;}//overflow対策
                                 result = ThingGen.CreateCurrency((int)Math.Floor(seed * Random.Range(2f, 4f)));
                             break;
                             case 777777 :
+                                seed = EClass.pc.LV;
                                 //float DLVinf = (DLV > 0)?(float)Math.Sqrt(DLV):1f;
                                 //if(DLVinf < 1f){DLVinf = 1f;} else if(DLVinf > 100f){DLVinf = 100f;}
-                                if(DLV > 0){seed = (int)Math.Floor(seed * DLVinf * DLVinf * DLVinf * DLVinf);}
+                                if (DLV > 0){seed = (int)Math.Floor(seed * DLVinf * DLVinf * DLVinf * DLVinf);}
                                 if(seed >= 100000000 || seed < 0){seed = 100000000;}//overflow対策
                                 result = ThingGen.CreateCurrency((int)Math.Floor(seed * Random.Range(4f, 8f)));
                             break;
                         }
-                        goto:labelResult;
+                        goto labelResult;
                     }
                     //抽選結果の処理================================================================================
                     if(num < TierSSRBorder)
@@ -130,7 +138,7 @@ namespace s649FR {
                         switch(prod)
                         {
                             case "STATUE" : 
-                                List<string> statueList = new string[]{"828","659","758","759","806","1190","1191"};
+                                List<string> statueList = new List<string>{"828","659","758","759","806","1190","1191"};
                                 result = (DLV >= 10)? ThingGen.Create(GetListRandom(statueList)) : ThingGen.Create("medal").SetNum(3);
                             break;
                             case "MEDAL" : 
@@ -140,7 +148,7 @@ namespace s649FR {
                             case "OREN" : 
                                 seed = EClass.pc.LV * 1000;
                                 if(seed < 1000){seed = 1000;};
-                                if(IsLuckNumber(num))
+                                if(IsLuckyNumber(num))
                                 {   //ラッキーナンバーならDLVの影響を乗算
                                     float DLVinf = (DLV > 0)?(float)Math.Sqrt(DLV):1f;
                                     if(DLVinf < 1f){DLVinf = 1f;} else if(DLVinf > 100f){DLVinf = 100f;}
@@ -153,6 +161,7 @@ namespace s649FR {
                             //    result = ThingGen.Create("medal").SetNum(1);
                             //break;
                             default : result = ThingGen.Create("medal").SetNum(1);
+                                break;
                         }
                     } else if(num < TierSRBorder)
                     {
@@ -176,7 +185,7 @@ namespace s649FR {
                             case "OREN" : 
                                 seed = EClass.pc.LV * 100;
                                 if(seed < 100){seed = 100;};
-                                if(IsLuckNumber(num))
+                                if(IsLuckyNumber(num))
                                 {   //ラッキーナンバーならDLVの影響を乗算
                                     float DLVinf = (DLV > 0)?(float)Math.Sqrt(DLV):1f;
                                     if(DLVinf < 1f){DLVinf = 1f;} else if(DLVinf > 100f){DLVinf = 100f;}
@@ -189,6 +198,7 @@ namespace s649FR {
                             break;
                             */
                             default : result = ThingGen.Create("money2").SetNum(EClass.rnd(2) + 1);
+                                break;
                         }
                     } else if(num < TierRBorder)
                     {
@@ -214,7 +224,7 @@ namespace s649FR {
                             case "OREN" : 
                                 seed = EClass.pc.LV * 10;
                                 if(seed < 10){seed = 10;};
-                                if(IsLuckNumber(num))
+                                if(IsLuckyNumber(num))
                                 {   //ラッキーナンバーならDLVの影響を乗算
                                     float DLVinf = (DLV > 0)?(float)Math.Sqrt(DLV):1f;
                                     if(DLVinf < 1f){DLVinf = 1f;} else if(DLVinf > 100f){DLVinf = 100f;}
@@ -227,6 +237,7 @@ namespace s649FR {
                             break;
                             */
                             default : result = ThingGen.Create("money2").SetNum(1);
+                                break;
                         }
                     } else if(num < TierMaterialBorder)
                     {
@@ -246,7 +257,7 @@ namespace s649FR {
                             break;
                             case "BRANCH" : result = ThingGen.Create("branch");
                             break;
-                            case "BONE" : result = (EClas.rnd(4) == 0)? ThingGen.Create("bone") : ThingGen.Create("fang");
+                            case "BONE" : result = (EClass.rnd(4) == 0)? ThingGen.Create("bone") : ThingGen.Create("fang");
                             break;
                             case "SCRAP" : result = ThingGen.Create("scrap", 78);
                             break;
@@ -256,7 +267,7 @@ namespace s649FR {
                             break;
                             case "JUNK" : 
                                 //string[] JUNKList = new string[]{"PAPER","GRAVE","CAN","BOTTLE","WOOD","RUBBER","SCRAP","GARBAGE"};
-                                switch(GetListRandom(JUNKList))
+                                switch(GetListRandom(GatyaListJunk))
                                 {
                                     case "PAPER" : 
                                     string[] paperlist = new string[]{"191","193","196","197","219","220","221","216","217","218","206","207","729","730"};
@@ -295,12 +306,12 @@ namespace s649FR {
                                     case "RUBBER" :
                                     if(EClass.rnd(10) == 0)
                                     {
-                                        t = ThingGen.Create("1180");//cat
+                                        result = ThingGen.Create("1180");//cat
                                     } else {
                                         if(EClass.rnd(2) == 0){
-                                            t = ThingGen.Create("1178");
+                                            result = ThingGen.Create("1178");
                                         } else {
-                                            t = ThingGen.Create("1179");
+                                            result = ThingGen.Create("1179");
                                         }
                                     }
                                     break;
@@ -337,7 +348,7 @@ namespace s649FR {
                                     case "OREN" : 
                                     seed = EClass.pc.LV;
                                     if(seed < 1){seed = 1;};
-                                    if(IsLuckNumber(num))
+                                    if(IsLuckyNumber(num))
                                     {   //ラッキーナンバーならDLVの影響を乗算
                                         float DLVinf = (DLV > 0)?(float)Math.Sqrt(DLV):1f;
                                         if(DLVinf < 1f){DLVinf = 1f;} else if(DLVinf > 100f){DLVinf = 100f;}
@@ -348,16 +359,18 @@ namespace s649FR {
                                     break;
                                     */
                                     default :result = ThingGen.Create("scrap", 78);//plastic
+                                        break;
 
                                 }
                             break;
                             default : result = ThingGen.Create("bone");
+                                break;
                         }
                     } else if(num < TierStoneBorder)
                     {
                         prod = "STONE";
                         /*
-                        if(IsLuckNumber(num))
+                        if(IsLuckyNumber(num))
                         {
                             float DLVinf = (DLV > 0)?(float)Math.Sqrt(DLV):1f;
                             if(DLVinf < 1f){DLVinf = 1f;} else if(DLVinf > 100f){DLVinf = 100f;}
@@ -375,13 +388,14 @@ namespace s649FR {
                                 case >= 1 and < 5: result = ThingGen.Create("pebble").SetNum(EClass.rnd(2) + 1);
                                 break;
                                 default : result = ThingGen.Create("stone").SetNum(EClass.rnd(5) + 1);
+                                break;
                             }
                         //}
                         
                     } else //dirt
                     {
                         prod = "DIRT";/*
-                        if(IsLuckNumber(num))
+                        if(IsLuckyNumber(num))
                         {
                             float DLVinf = (DLV > 0)?(float)Math.Sqrt(DLV):1f;
                             if(DLVinf < 1f){DLVinf = 1f;} else if(DLVinf > 100f){DLVinf = 100f;}
@@ -450,14 +464,23 @@ namespace s649FR {
                 else 
                 {
                     int max = 20;
-                    return sList[Random.Range(0,(sList.Length > 20)? max : sList.Length;)];
+                    return sList[Random.Range(0,(sList.Length > 20)? max : sList.Length)];
+                }
+            }
+            internal static string GetListRandom(List<string> sList)
+            {
+                if (sList == null) { return ""; }
+                else
+                {
+                    int max = 20;
+                    return sList[Random.Range(0, (sList.Count > 20) ? max : sList.Count)];
                 }
             }
 
             internal static int reroll(int num,int LUC){//v0.3.3.0 add
                 int amari;
                 while(LUC > 0){
-                    if(IsLuckNumber(num)){//v0.3.3.1 moved
+                    if(IsLuckyNumber(num)){//v0.3.3.1 moved
                         break;
                     }
                     if(LUC > 1000){
@@ -476,7 +499,7 @@ namespace s649FR {
                 }
                 return num;
             }
-            internal static bool IsLuckNumber(int n){//v0.4.0.0 edit
+            internal static bool IsLuckyNumber(int n){//v0.4.0.0 edit
                 switch(n){
                     //case <= 50 : return true;
                     case 7 or 77 or 777 or 7777 or 77777 or 777777: return true;
