@@ -18,7 +18,7 @@ namespace s649FR
 {
     namespace Main 
     {
-        [BepInPlugin("s649_FloorRemoval", "s649 Floor Removal", "0.5.0.0")]  
+        [BepInPlugin("s649_FloorRemoval", "s649 Floor Removal", "0.5.0.1")]  
         public class PatchMain : BaseUnityPlugin
         {
             //ConfigEntry + prop------------------------------------------------------------------------------
@@ -76,10 +76,10 @@ namespace s649FR
 		        get {return Mathf.Clamp(CE_Value_T3Border.Value,1000,10000);}
 	        }
             public static int cf_Value_T4Border {
-		        get {return Mathf.Clamp(CE_Value_T3Border.Value,1000,100000);}
+		        get {return Mathf.Clamp(CE_Value_T4Border.Value,10000,100000);}
 	        }
             public static int cf_Value_T5Border {
-		        get {return Mathf.Clamp(CE_Value_T3Border.Value,100000,1000000);}
+		        get {return Mathf.Clamp(CE_Value_T5Border.Value,100000,1000000);}
 	        }
             //class  prop----------------------------------------------------------
             internal static int currentDLV = 0;//v0.3.4.0 
