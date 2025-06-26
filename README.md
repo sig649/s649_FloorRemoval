@@ -1,3 +1,5 @@
+TODO:硬い土の床が掘り返せないバグ  
+  
 ここのページの情報は古い可能性があります  
 最新の物はSTEAMのページの方を参照してください  
 The information on this page may be out of date.  
